@@ -1,0 +1,64 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environments
+.env
+.venv
+venv
+env
+ENV
+*/.venv
+*/env
+*/ENV
+
+# Distribution / packaging
+dist/
+build/
+*.egg
+*.whl
+*.tar.gz
+*.zip
+*.egg-info
+*.dist-info
+
+# Installed packages
+*.lib
+lib/
+sdist/
+*.deb
+*.rpm
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+*.coverage
+*.log
+nosetests.xml
+coverage.xml
+*.dirstat
+
+# OS or Editor related files
+.DS_Store
+*.swp
+*.swo
+.vscode
+.idea
+*.tmproj
+*.bak
+*.orig
+*~
+
+# Documentation output
+docs/_build/
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# Specific project related files or folders
+# Add any other project-specific files or folders below, for example:
+# my_custom_folder/
+# config.ini
