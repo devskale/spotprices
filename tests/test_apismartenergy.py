@@ -9,5 +9,5 @@ sys.path.append(str(project_root))
 from api.smartenergy.client import Client
 
 client = Client()
-prices = client.fetch_current_prices()
+prices = client.fetch_day_prices()
 print(prices[0])
