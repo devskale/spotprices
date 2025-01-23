@@ -62,3 +62,4 @@ docs/_build/
 # Add any other project-specific files or folders below, for example:
 # my_custom_folder/
 # config.ini
+.aider*
