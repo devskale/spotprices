@@ -1,0 +1,27 @@
+spotprices/
+│
+├── db/
+│   ├── models/                # Database table definitions
+│   │   ├── spot_prices.py     # SpotPrice table definition (timestamps, price, source)
+│   │   ├── daily_stats.py     # DailyStats table (min/max/avg prices per day)
+│   │   └── config.py          # Config table for app settings
+│   └── operations/            # Database CRUD operations
+│       ├── spot_prices.py     # Operations for spot prices (insert/update/query)
+│       ├── daily_stats.py     # Operations for stats (calculate/update/retrieve)
+│       └── config.py          # Operations for config management
+│
+├── api/                       # API clients
+│   ├── awattar/
+│   │   └── client.py         # Awattar API client (fetch spot prices)
+│   └── smartenergy/
+│       └── client.py         # SmartEnergy API client (fetch spot prices)
+│
+├── utils/                     # Helper functions
+│   ├── visualizer.py         # Data visualization (ASCII charts, exports)
+│   └── datetime_helper.py    # DateTime conversion and handling
+│
+├── tests/                     # Test files testing the functions
+│
+├── description/               # description of the project
+│
+└── main.py                   # Main application entry point
