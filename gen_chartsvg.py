@@ -4,6 +4,7 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 from db.models.spot_prices import SpotPrice
 from config import CONFIG
+import math
 
 def gen_chart_svg(startday, endday, output_file='price_chart.svg'):
     db_file = CONFIG['db_path'] / CONFIG['db_file']
@@ -25,56 +26,63 @@ def gen_chart_svg(startday, endday, output_file='price_chart.svg'):
             print("No data found for the specified period")
             return
 
-        # Convert timestamps to values
         timestamps = [datetime.fromtimestamp(p.start_timestamp) for p in prices]
         values = [p.price for p in prices]
         
-        # Calculate dimensions and scaling
         width = 800
         height = 400
         padding = 50
         plot_width = width - 2 * padding
         plot_height = height - 2 * padding
         
-        min_price = min(0, min(values))  # Include 0 in range
+        min_price = min(0, min(values))
         max_price = max(values)
+        
+        # Round min/max to nearest 10 cents
+        min_price = math.floor(min_price / 10) * 10
+        max_price = math.ceil(max_price / 10) * 10
         price_range = max_price - min_price
         
-        # Generate SVG content
         svg_content = f'''<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg width="{width}" height="{height}" xmlns="http://www.w3.org/2000/svg">
     <style>
-        .grid {{ stroke: gray; stroke-width: 0.5; opacity: 0.3; stroke-dasharray: 2,2; }}
+        .grid {{ stroke: gray; stroke-width: 0.5; opacity: 0.3; stroke-dasharray: 4,4; }}
+        .grid-midnight {{ stroke: gray; stroke-width: 1; opacity: 0.5; }}
         .axis {{ stroke: black; stroke-width: 1; }}
         .price-line {{ stroke: #268358; stroke-width: 2; fill: none; }}
         .price-area {{ fill: #268358; opacity: 0.1; }}
         .axis-text {{ font-family: Arial; font-size: 12px; }}
+        .title {{ font-family: Arial; font-size: 16px; font-weight: bold; }}
     </style>
     
     <!-- Title -->
-    <text x="{width/2}" y="25" text-anchor="middle" font-family="Arial" font-size="16">
+    <text x="{width/2}" y="25" text-anchor="middle" class="title">
         Spot Tarif stündlich EPEXAT (ct/kWh)
     </text>
 '''
         
-        # Generate grid lines and labels
-        num_grid_lines = 5
-        for i in range(num_grid_lines + 1):
-            y = padding + (plot_height * i / num_grid_lines)
-            price = max_price - (price_range * i / num_grid_lines)
+        # Generate grid lines for even numbers
+        step = 10  # 10 cents steps
+        for price in range(math.floor(min_price/step)*step, math.ceil(max_price/step)*step + step, step):
+            y = padding + plot_height * (1 - (price - min_price) / price_range)
             svg_content += f'''    <line class="grid" x1="{padding}" y1="{y}" x2="{width-padding}" y2="{y}" />
-    <text class="axis-text" x="{width-padding+5}" y="{y+5}" text-anchor="start">{price:.2f}</text>
+    <text class="axis-text" x="{width-padding+5}" y="{y+5}" text-anchor="start">{price:.0f}</text>
 '''
 
-        # Generate time axis labels
+        # Time axis labels
         time_interval = timedelta(hours=12)
         current_time = timestamps[0]
         while current_time <= timestamps[-1]:
             x = padding + plot_width * (current_time - timestamps[0]).total_seconds() / (timestamps[-1] - timestamps[0]).total_seconds()
-            if current_time.hour in [0, 12]:
-                svg_content += f'''    <line class="grid" x1="{x}" y1="{padding}" x2="{x}" y2="{height-padding}" />
-    <text class="axis-text" x="{x}" y="{height-padding+20}" text-anchor="middle">
-        {current_time.strftime('%a %H:%M')}
+            if current_time.hour == 0:
+                svg_content += f'''    <line class="grid-midnight" x1="{x}" y1="{padding}" x2="{x}" y2="{height-padding}" />'''
+            elif current_time.hour == 12:
+                svg_content += f'''    <line class="grid" x1="{x}" y1="{padding}" x2="{x}" y2="{height-padding}" />'''
+            
+            # Add day name in the middle of each day
+            if current_time.hour == 12:
+                svg_content += f'''    <text class="axis-text" x="{x}" y="{height-padding+20}" text-anchor="middle">
+        {current_time.strftime('%A')}
     </text>
 '''
             current_time += time_interval
@@ -88,7 +96,6 @@ def gen_chart_svg(startday, endday, output_file='price_chart.svg'):
             line_points.append(f"{x},{y}")
             area_points.append(f"{x},{y}")
             
-        # Complete area points for fill
         base_y = padding + plot_height * (1 - (0 - min_price) / price_range)
         area_points.append(f"{padding + plot_width},{base_y}")
         area_points.append(f"{padding},{base_y}")
@@ -97,7 +104,6 @@ def gen_chart_svg(startday, endday, output_file='price_chart.svg'):
     <path class="price-line" d="M {' L '.join(line_points)}" />
 </svg>'''
 
-        # Save to file
         with open(output_file, 'w') as f:
             f.write(svg_content)
         
@@ -105,4 +111,4 @@ def gen_chart_svg(startday, endday, output_file='price_chart.svg'):
 
 if __name__ == "__main__":
     today = datetime.now().date()
-    gen_chart_svg(today - timedelta(days=2), today + timedelta(days=1))
+    gen_chart_svg(today - timedelta(days=1), today + timedelta(days=1))
