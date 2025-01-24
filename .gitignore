@@ -46,6 +46,7 @@ coverage.xml
 .DS_Store
 *.swp
 *.swo
+*.svg
 .vscode
 .idea
 *.tmproj
