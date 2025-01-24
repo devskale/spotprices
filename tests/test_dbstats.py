@@ -76,7 +76,7 @@ def test_db_listvalues(day: datetime, source: str = 'awattar'):
 
 if __name__ == "__main__":
 #    yesterday = datetime.now() - timedelta(days=1)
-    test_db_stats(day= datetime.now() - timedelta(days=5) )
+    test_db_stats(day= datetime.now() - timedelta(days=0) )
 #    test_db_listvalues(day=datetime.now(), source='awattar')
 #    test_db_listvalues(day=datetime.now(), source='smartenergy')
     # pls list all the prices for today from the db

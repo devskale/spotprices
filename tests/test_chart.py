@@ -55,12 +55,13 @@ def print_chart(prices, width=80, height=15):
 
 
 # tests/test_chart.py
-def show_last_days(days=3):
+def show_last_days(days=2):
     db_file = CONFIG['db_path'] / CONFIG['db_file']
     engine = create_engine(f'sqlite:///{db_file}')
     
     today = datetime.now().date()
-    end_time = datetime.combine(today, datetime.max.time())
+    tomorrow = today + timedelta(days=1)
+    end_time = datetime.combine(tomorrow, datetime.max.time())
     start_time = datetime.combine(today - timedelta(days=days), datetime.min.time())
     
     with Session(engine) as session:
