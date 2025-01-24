@@ -56,25 +56,27 @@ def gen_chart_svg(startday, endday, output_file='price_chart.svg', minmaxdot=Fal
         .min-dot {{ fill: #0066cc; }}
         .max-dot {{ fill: #cc0000; }}
         .dot-label {{ font-family: Arial; font-size: 11px; }}
+        .brand-card {{ fill: white; stroke: #ddd; stroke-width: 1; rx: 4; }}
+        .brand-text {{ font-family: Arial; font-size: 10px; fill: #666; }}
     </style>
     
     <!-- Title -->
     <text x="{width/2}" y="25" text-anchor="middle" class="title">
         Spot Tarif stündlich EPEXAT
     </text>
+    
     <!-- Y-axis label -->
     <text x="{width-padding+25}" y="{padding-20}" text-anchor="middle" class="axis-text">
         ct/kWh
-    </text>
-'''
+    </text>'''
         
         # Generate grid lines for even numbers
         step = 10  # 10 cents steps
         for price in range(math.floor(min_price/step)*step, math.ceil(max_price/step)*step + step, step):
             y = padding + plot_height * (1 - (price - min_price) / price_range)
-            svg_content += f'''    <line class="grid" x1="{padding}" y1="{y}" x2="{width-padding}" y2="{y}" />
-    <text class="axis-text" x="{width-padding+5}" y="{y+5}" text-anchor="start">{price:.0f}</text>
-'''
+            svg_content += f'''
+    <line class="grid" x1="{padding}" y1="{y}" x2="{width-padding}" y2="{y}" />
+    <text class="axis-text" x="{width-padding+5}" y="{y+5}" text-anchor="start">{price:.0f}</text>'''
 
         # Time axis labels
         time_interval = timedelta(hours=12)
@@ -82,16 +84,16 @@ def gen_chart_svg(startday, endday, output_file='price_chart.svg', minmaxdot=Fal
         while current_time <= timestamps[-1]:
             x = padding + plot_width * (current_time - timestamps[0]).total_seconds() / (timestamps[-1] - timestamps[0]).total_seconds()
             if current_time.hour == 0:
-                svg_content += f'''    <line class="grid-midnight" x1="{x}" y1="{padding}" x2="{x}" y2="{height-padding}" />'''
+                svg_content += f'''
+    <line class="grid-midnight" x1="{x}" y1="{padding}" x2="{x}" y2="{height-padding}" />'''
             elif current_time.hour == 12:
-                svg_content += f'''    <line class="grid" x1="{x}" y1="{padding}" x2="{x}" y2="{height-padding}" />'''
+                svg_content += f'''
+    <line class="grid" x1="{x}" y1="{padding}" x2="{x}" y2="{height-padding}" />'''
             
             # Add day name and date in the middle of each day
             if current_time.hour == 12:
                 date_str = current_time.strftime('%d.%m.')
-                weekday = current_time.strftime('%A')  # Gets full weekday name
-                
-                # Convert English weekday to German
+                weekday = current_time.strftime('%A')
                 weekday_de = {
                     'Monday': 'Montag',
                     'Tuesday': 'Dienstag', 
@@ -102,9 +104,10 @@ def gen_chart_svg(startday, endday, output_file='price_chart.svg', minmaxdot=Fal
                     'Sunday': 'Sonntag'
                 }[weekday]
                 
-                svg_content += f'''    <text class="axis-text" x="{x}" y="{height-padding+15}" text-anchor="middle">{weekday_de}</text>
-    <text class="axis-text" x="{x}" y="{height-padding+30}" text-anchor="middle">{date_str}</text>
-'''
+                svg_content += f'''
+    <text class="axis-text" x="{x}" y="{height-padding+15}" text-anchor="middle">{weekday_de}</text>
+    <text class="axis-text" x="{x}" y="{height-padding+30}" text-anchor="middle">{date_str}</text>'''
+            
             current_time += time_interval
 
         # Generate price line
@@ -116,11 +119,13 @@ def gen_chart_svg(startday, endday, output_file='price_chart.svg', minmaxdot=Fal
             line_points.append(f"{x},{y}")
             area_points.append(f"{x},{y}")
             
+        # Complete area points for fill
         base_y = padding + plot_height * (1 - (0 - min_price) / price_range)
         area_points.append(f"{padding + plot_width},{base_y}")
         area_points.append(f"{padding},{base_y}")
         
-        svg_content += f'''    <path class="price-area" d="M {' L '.join(area_points)} Z" />
+        svg_content += f'''
+    <path class="price-area" d="M {' L '.join(area_points)} Z" />
     <path class="price-line" d="M {' L '.join(line_points)}" />'''
 
         # Add min/max dots if enabled
@@ -144,7 +149,12 @@ def gen_chart_svg(startday, endday, output_file='price_chart.svg', minmaxdot=Fal
     <circle class="max-dot" cx="{max_x}" cy="{max_y}" r="4" />
     <text class="dot-label" x="{max_x}" y="{max_y-10}" text-anchor="middle">{max_val:.1f}</text>'''
 
-        svg_content += '\n</svg>'
+        # Add brand card
+        svg_content += f'''
+    <!-- Brand card -->
+    <rect class="brand-card" x="{width-padding-65}" y="{height-padding-40}" width="60" height="20"/>
+    <text class="brand-text" x="{width-padding-35}" y="{height-padding-26}" text-anchor="middle">by skale.dev</text>
+</svg>'''
 
         with open(output_file, 'w') as f:
             f.write(svg_content)
@@ -153,4 +163,7 @@ def gen_chart_svg(startday, endday, output_file='price_chart.svg', minmaxdot=Fal
 
 if __name__ == "__main__":
     today = datetime.now().date()
-    gen_chart_svg(today - timedelta(days=2), today + timedelta(days=1), minmaxdot=True)
+    startdate = today - timedelta(days=5)
+    enddate = today + timedelta(days=1)
+    outputfilename = f"price_chart_{startdate.strftime('%Y-%m-%d')}_{enddate.strftime('%Y-%m-%d')}.svg"
+    gen_chart_svg(startday=startdate, endday=enddate, output_file=outputfilename, minmaxdot=True)
