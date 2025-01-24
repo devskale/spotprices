@@ -1,5 +1,7 @@
 spotprices/
 │
+├── config.py
+│
 ├── db/
 │   ├── models/                # Database table definitions
 │   │   ├── spot_prices.py     # SpotPrice table definition (timestamps, price, source)
@@ -8,9 +10,10 @@ spotprices/
 │   └── operations/            # Database CRUD operations
 │       ├── spot_prices.py     # Operations for spot prices (insert/update/query)
 │       ├── daily_stats.py     # Operations for stats (calculate/update/retrieve)
-│       └── config.py          # Operations for config management
+│       └── update_db.py       # Database update operations
 │
 ├── api/                       # API clients
+│   ├── models.py             # API model definitions
 │   ├── awattar/
 │   │   └── client.py         # Awattar API client (fetch spot prices)
 │   └── smartenergy/
@@ -20,8 +23,13 @@ spotprices/
 │   ├── visualizer.py         # Data visualization (ASCII charts, exports)
 │   └── datetime_helper.py    # DateTime conversion and handling
 │
-├── tests/                     # Test files testing the functions
-│
 ├── description/               # description of the project
 │
-└── main.py                   # Main application entry point
+├── main.py                   # Main application entry point
+│
+└── tests/                      # Test files testing the functions
+    ├── test_chart.py
+    ├── test_gaps.py
+    ├── test_today.py
+    ├── test_database.py
+    └── test_daily_stats.py
