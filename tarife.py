@@ -95,7 +95,7 @@ def crawl_data(data, crawler='w3m', n=1, fetchinterval=20, verbose=True, savetof
                   base_filename = f"crawl_{energieanbieter}_{tariftype}"
                   
                   matching_files = list(crawl_dir.glob(f"{base_filename}*.txt"))
-                  
+                  filepath = None # Initialize filepath here
                   
                   if matching_files:
                     # sort the files based on modification time, latest first
