@@ -65,3 +65,4 @@ docs/_build/
 # my_custom_folder/
 # config.ini
 .aider*
+config.py
