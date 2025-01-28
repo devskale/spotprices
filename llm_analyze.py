@@ -1,6 +1,9 @@
 import requests
 import json
 from config import LLM_CONFIG, QUERY_CONFIG
+import os
+import time
+
 
 def llm_analyze(llm_model_name, query_name, context=None):
     """
@@ -86,31 +89,98 @@ def llm_analyze(llm_model_name, query_name, context=None):
          return None
 
 
+def process_files_and_analyze(llm_model, query_to_use, maxtokens=12000):
+    """
+    Processes files in the 'data/crawls' directory, sends them to the LLM for analysis,
+    and saves the results to a report file.
+
+    Args:
+        llm_model (str): The name of the LLM model to use.
+        query_to_use (str): The name of the query to use.
+        maxtokens (int, optional): The maximum number of tokens to use from a file. Defaults to 12000.
+    """
+    flist = [f for f in os.listdir('data/crawls') if f.startswith('crawl_')]
+    print(flist)
+
+    # delete all files starting with report_
+    for f in os.listdir('data/crawls'):
+        if f.startswith('report_'):
+            os.remove(f'data/crawls/{f}')
+    
+    # Create or open the report file
+    report_file_path = f'data/crawls/report_{time.strftime("%Y%m%d")}.txt'
+    with open(report_file_path, 'a') as report_file:
+        # Loop through the file list
+        for f in flist:
+            with open(f'data/crawls/{f}', 'r') as file:
+                example_context = file.read()
+                tokens = round(len(example_context) / 4)
+                if tokens > maxtokens:
+                    print(f"Context is too long ({tokens} tokens). Truncated at {maxtokens} tokens.")
+                    example_context = example_context[:maxtokens * 4]
+
+                print(f' {llm_model} ({flist.index(f) + 1}/{len(flist)}) analyzing {f} / {tokens} tokens')
+
+                result = llm_analyze(llm_model, query_to_use, context=example_context)
+
+                if result:
+                    # Print response in light grey
+                    print(f"\033[37mResponse from {llm_model}:\n{result[:2000]}\033[0m")
+                    # Append the result to the report file
+                    #stromanbieter is the second part of the filename
+                    Stromanbietername = f.split('_')[1]
+                    report_file.write(f"-- Stromanbieter: {Stromanbietername}\n{result}\n\n")
+                    # Wait 2s
+                    time.sleep(2)
+                else:
+                    print(f"Failed to get a response from {llm_model}.")
+                    break
+    return report_file_path
+
+def solidify_report(report_file_path, query_to_use, llm_model='arli_nemo'):
+    """
+    Reads the content of a report file, sends it to the LLM for solidification
+    using the specified query, and saves the solidified report to a new file.
+
+    Args:
+        report_file_path (str): The path to the report file.
+        query_to_use (str): The name of the query to use for solidification.
+        llm_model (str, optional): The name of the LLM model to use. Defaults to 'arli_nemo'.
+    """
+    try:
+        with open(report_file_path, 'r') as report_file:
+            report_content = report_file.read()
+
+        print(f"Analyzing report with {llm_model} and query: {query_to_use}")
+        solidified_result = llm_analyze(llm_model, query_to_use, context=report_content)
+
+        if solidified_result:
+            # Create solidified report file
+            solid_report_file_path = f'{os.path.splitext(report_file_path)[0]}_solid.txt'
+            with open(solid_report_file_path, 'w') as solid_report_file:
+                solid_report_file.write(solidified_result)
+            print(f"Solidified report saved to: {solid_report_file_path}")
+            return solid_report_file_path
+        else:
+             print(f"Failed to get a solidified response from {llm_model}.")
+             return None
+    except FileNotFoundError:
+        print(f"Error: Report file not found at {report_file_path}")
+        return None
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return None
+
+
 if __name__ == '__main__':
     # Example usage:
 #    llm_model = 'openrouter_llama'
-    llm_model = 'groq_r1'
+#    llm_model = 'groq_r1'
 #    llm_model = 'amp1_gemma'
-#    llm_model = 'arli_nemo'
+    llm_model = 'arli_nemo'
     query_to_use = 'TARIFLISTE_ABFRAGE'
+#    report_file_path = process_files_and_analyze(llm_model='arli_nemo', query_to_use)
     
-    # Example context
-    with open('data/crawls/test3.txt', 'r') as file:
-        example_context = file.read()
-
-    maxtokens = 12000
-    tokens = round(len(example_context) / 4)
-    if tokens > maxtokens:
-        print(f"Context is too long ({tokens} tokens). Truncated at {maxtokens} tokens.")
-        example_context = example_context[:maxtokens * 4]
-    else:
-        print(f"Context: {tokens} tokens.")
-
-    #exit()
-
-    result = llm_analyze(llm_model, query_to_use, context=example_context)
-
-    if result:
-        print(f"Response from {llm_model}:\n{result}")
-    else:
-        print(f"Failed to get a response from {llm_model}.")
+    query_to_use = 'SOLIDIFY_REPORT_R1'
+    report_file_path = 'data/crawls/report_20250128.txt'
+    solidify_report(report_file_path, query_to_use, llm_model='groq_r1')
