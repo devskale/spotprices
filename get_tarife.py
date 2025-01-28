@@ -144,11 +144,26 @@ def crawl_data(data, crawler='w3m', n=1, fetchinterval=20, verbose=True, savetof
                         else:
                             encoding = 'utf-8'
 
+                        cleaned_text = response.text
+                        # add energieanbieter to response text
+                        cleaned_text = f"Energieanbieter: {energieanbieter}\n{cleaned_text}"
+
+                        # ADD CLEANUP HERE
+                        # Remove unwanted characters.
+                        cleaned_text = re.sub(r'[\r\n]+', '\n', cleaned_text) # remove multiple line breaks
+                        cleaned_text = re.sub(r'\s+', ' ', cleaned_text) # remove multiple spaces
+                        cleaned_text = re.sub(r'-+', ' ', cleaned_text) # remove multiple --
+                        cleaned_text = re.sub(r'[\xa0]', ' ', cleaned_text) # remove &nbsp; (non-breaking space)
+                        # remove □
+                        cleaned_text = re.sub(r'□', '', cleaned_text)
+                        # remove multiple number of ━
+                        cleaned_text = re.sub(r'━{2,}', '━', cleaned_text)
+
                         if verbose:
                             print(f"Fetched data from {url}")
                         if savetofile:
                             with open(filepath, "w", encoding=encoding) as file:
-                                file.write(response.text)
+                                file.write(cleaned_text)
                             print(f"Successfully crawled and saved {filepath}")
                            
 
@@ -192,9 +207,9 @@ def cleanup(n=1):
 
 
 if __name__ == "__main__":
-#    data = fetch_and_convert_csv_to_dict()
+    data = fetch_and_convert_csv_to_dict()
     #print(data)
     #print_data_beautifully(data)
-    # crawl_data(data=data, crawler='w3m', n=1, fetchinterval=20, verbose=True, savetofile=True)
+    crawl_data(data=data, crawler='w3m', n=0, fetchinterval=20, verbose=True, savetofile=True)
     cleanup(n=1)
 
