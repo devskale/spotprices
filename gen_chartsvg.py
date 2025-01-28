@@ -156,14 +156,14 @@ def gen_chart_svg(startday, endday, output_file='price_chart.svg', minmaxdot=Fal
     <text class="brand-text" x="{width-padding-35}" y="{height-padding-26}" text-anchor="middle">by skale.dev</text>
 </svg>'''
 
-        with open(output_file, 'w') as f:
+        with open('./data/charts/'+output_file, 'w') as f:
             f.write(svg_content)
         
         print(f"Chart saved to {output_file}")
 
 if __name__ == "__main__":
     today = datetime.now().date()
-    startdate = today - timedelta(days=5)
+    startdate = today - timedelta(days=7)
     enddate = today + timedelta(days=1)
     outputfilename = f"price_chart_{startdate.strftime('%Y-%m-%d')}_{enddate.strftime('%Y-%m-%d')}.svg"
     gen_chart_svg(startday=startdate, endday=enddate, output_file=outputfilename, minmaxdot=True)

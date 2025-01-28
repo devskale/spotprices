@@ -88,16 +88,17 @@ def llm_analyze(llm_model_name, query_name, context=None):
 
 if __name__ == '__main__':
     # Example usage:
-    llm_model = 'openrouter_llama'
-#    llm_model = 'groq_llama'
+#    llm_model = 'openrouter_llama'
+    llm_model = 'groq_r1'
 #    llm_model = 'amp1_gemma'
-    query_to_use = 'BEZUGSPRES_ABFRAGE_JSON'
+#    llm_model = 'arli_nemo'
+    query_to_use = 'TARIFLISTE_ABFRAGE'
     
     # Example context
-    with open('data/crawls/test7.txt', 'r') as file:
+    with open('data/crawls/test3.txt', 'r') as file:
         example_context = file.read()
 
-    maxtokens = 8000
+    maxtokens = 12000
     tokens = round(len(example_context) / 4)
     if tokens > maxtokens:
         print(f"Context is too long ({tokens} tokens). Truncated at {maxtokens} tokens.")
