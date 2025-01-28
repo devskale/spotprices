@@ -169,26 +169,32 @@ def cleanup(n=1):
 
     files_by_base = {}
     for filepath in crawl_dir.glob("crawl_*.txt"):
-        base_filename = "_".join(filepath.name.split("_")[:-1])
-        if base_filename not in files_by_base:
-           files_by_base[base_filename] = []
-        files_by_base[base_filename].append(filepath)
+        # Extract the base filename using regex
+        match = re.match(r'(crawl_[^_]+_[^_]+)_\d{8}_\d{6}\.txt', filepath.name)
+        if match:
+            base_filename = match.group(1)
+            if base_filename not in files_by_base:
+                files_by_base[base_filename] = []
+            files_by_base[base_filename].append(filepath)
 
     for base_filename, filepaths in files_by_base.items():
         if len(filepaths) > n:
             filepaths.sort(key=lambda f: f.stat().st_mtime, reverse=True)
             files_to_delete = filepaths[n:]
-            print(f"  Found {len(files_to_delete)} old files for {base_filename}")
+            #print(f"  Found {len(files_to_delete)} old files for {base_filename}")
             for file_to_delete in files_to_delete:
-                print(f"  Deleting: {file_to_delete}")
+                print(f"  (-) {file_to_delete}")
                 os.remove(file_to_delete)
         else:
-            print(f"  No old files to delete for {base_filename}")
+            #print(f"  No old files to delete for {base_filename}")
+            print(".", end="")
+    print("")
+
 
 if __name__ == "__main__":
-    data = fetch_and_convert_csv_to_dict()
+#    data = fetch_and_convert_csv_to_dict()
     #print(data)
     #print_data_beautifully(data)
-    crawl_data(data=data, crawler='w3m', n=0, fetchinterval=20, verbose=True, savetofile=True)
+    # crawl_data(data=data, crawler='w3m', n=1, fetchinterval=20, verbose=True, savetofile=True)
     cleanup(n=1)
 
