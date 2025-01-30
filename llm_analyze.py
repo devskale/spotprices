@@ -27,25 +27,24 @@ def llm_analyze(llm_model_name, query_name, context=None):
     if not query_config:
         print(f"Error: No query found for query name: {query_name}")
         return None
-    
+
     query = query_config[0].get("QUERY")
 
     # Add context to the query if provided
     if context:
         query = f"{query}\n\n{context}"
 
-
     base_url = llm_config[0].get("BASEURL")
     api_key = llm_config[0].get("APIKEY")
     model = llm_config[0].get("MODEL")
-    
+
     headers = {
-            "Content-Type": "application/json"
-        }
+        "Content-Type": "application/json"
+    }
 
     if 'openrouter' in llm_model_name:
-         headers['Authorization'] = f'Bearer {api_key}'
-         data = {
+        headers['Authorization'] = f'Bearer {api_key}'
+        data = {
             "model": model,
             "messages": [{"role": "user", "content": query}]
         }
@@ -53,24 +52,26 @@ def llm_analyze(llm_model_name, query_name, context=None):
     elif 'amp1' in llm_model_name:
         data = {
             "prompt": query,
-             "model": model
+            "model": model
         }
-    else :  # openai fallback
-         headers['Authorization'] = f'Bearer {api_key}'
-         data = {
+    else:  # openai fallback
+        headers['Authorization'] = f'Bearer {api_key}'
+        data = {
             "model": model,
             "messages": [{"role": "user", "content": query}]
         }
 
-
     try:
         if 'openrouter' in llm_model_name:
-            response = requests.post(f"{base_url}/chat/completions", headers=headers, json=data)
+            response = requests.post(
+                f"{base_url}/chat/completions", headers=headers, json=data)
         elif 'amp1' in llm_model_name:
-            response = requests.post(f"{base_url}/v1/completions", headers=headers, json=data)
+            response = requests.post(
+                f"{base_url}/v1/completions", headers=headers, json=data)
         else:
-            response = requests.post(f"{base_url}/chat/completions", headers=headers, json=data)
-            
+            response = requests.post(
+                f"{base_url}/chat/completions", headers=headers, json=data)
+
         response.raise_for_status()  # Raise an exception for bad status codes
 
         if 'openrouter' in llm_model_name:
@@ -84,12 +85,12 @@ def llm_analyze(llm_model_name, query_name, context=None):
         print(f"Error during request to {llm_model_name}: {e}")
         return None
     except KeyError as e:
-         print(f"Error parsing response from {llm_model_name}: {e}")
-         print(response.text)
-         return None
+        print(f"Error parsing response from {llm_model_name}: {e}")
+        print(response.text)
+        return None
 
 
-def process_files_and_analyze(llm_model, query_to_use, maxtokens=12000):
+def llmanalyze_files(llm_model='arli_nemo', files='crawl_', query_to_use='TARIFLISTE_ABFRAGE', maxtokens=12000):
     """
     Processes files in the 'data/crawls' directory, sends them to the LLM for analysis,
     and saves the results to a report file.
@@ -99,37 +100,37 @@ def process_files_and_analyze(llm_model, query_to_use, maxtokens=12000):
         query_to_use (str): The name of the query to use.
         maxtokens (int, optional): The maximum number of tokens to use from a file. Defaults to 12000.
     """
-    flist = [f for f in os.listdir('data/crawls') if f.startswith('crawl_')]
+    flist = [f for f in os.listdir('data/crawls') if files in f]
     print(flist)
 
-    # delete all files starting with report_
-    for f in os.listdir('data/crawls'):
-        if f.startswith('report_'):
-            os.remove(f'data/crawls/{f}')
-    
     # Create or open the report file
     report_file_path = f'data/crawls/report_{time.strftime("%Y%m%d")}.txt'
-    with open(report_file_path, 'a') as report_file:
+    with open(report_file_path, 'a', encoding='utf-8') as report_file:
         # Loop through the file list
         for f in flist:
-            with open(f'data/crawls/{f}', 'r') as file:
+            with open(f'data/crawls/{f}', 'r', encoding='utf-8') as file:
                 example_context = file.read()
                 tokens = round(len(example_context) / 4)
                 if tokens > maxtokens:
-                    print(f"Context is too long ({tokens} tokens). Truncated at {maxtokens} tokens.")
+                    print(f"Context is too long ({tokens} tokens). Truncated at {
+                          maxtokens} tokens.")
                     example_context = example_context[:maxtokens * 4]
 
-                print(f' {llm_model} ({flist.index(f) + 1}/{len(flist)}) analyzing {f} / {tokens} tokens')
+                print(f' {llm_model} ({flist.index(f) + 1}/{len(flist)
+                                                            }) analyzing {f} / {tokens} tokens')
 
-                result = llm_analyze(llm_model, query_to_use, context=example_context)
+                result = llm_analyze(
+                    llm_model, query_to_use, context=example_context)
 
                 if result:
                     # Print response in light grey
-                    print(f"\033[37mResponse from {llm_model}:\n{result[:2000]}\033[0m")
+                    print(f"\033[37mResponse from {
+                          llm_model}:\n{result[:2000]}\033[0m")
                     # Append the result to the report file
-                    #stromanbieter is the second part of the filename
+                    # stromanbieter is the second part of the filename
                     Stromanbietername = f.split('_')[1]
-                    report_file.write(f"-- Stromanbieter: {Stromanbietername}\n{result}\n\n")
+                    report_file.write(
+                        f"-- Stromanbieter: {Stromanbietername}\n{result}\n\n")
                     # Wait 2s
                     time.sleep(2)
                 else:
@@ -137,7 +138,8 @@ def process_files_and_analyze(llm_model, query_to_use, maxtokens=12000):
                     break
     return report_file_path
 
-def solidify_report(report_file_path, query_to_use, llm_model='arli_nemo'):
+
+def solidify_report(report_file_path='Default', query_to_use='Standard', llm_model='arli_nemo', ending='solid.txt'):
     """
     Reads the content of a report file, sends it to the LLM for solidification
     using the specified query, and saves the solidified report to a new file.
@@ -148,22 +150,24 @@ def solidify_report(report_file_path, query_to_use, llm_model='arli_nemo'):
         llm_model (str, optional): The name of the LLM model to use. Defaults to 'arli_nemo'.
     """
     try:
-        with open(report_file_path, 'r') as report_file:
+        with open(report_file_path, 'r', encoding='utf-8') as report_file:
             report_content = report_file.read()
 
         print(f"Analyzing report with {llm_model} and query: {query_to_use}")
-        solidified_result = llm_analyze(llm_model, query_to_use, context=report_content)
+        solidified_result = llm_analyze(
+            llm_model, query_to_use, context=report_content)
 
         if solidified_result:
             # Create solidified report file
-            solid_report_file_path = f'{os.path.splitext(report_file_path)[0]}_solid.txt'
-            with open(solid_report_file_path, 'w') as solid_report_file:
+            solid_report_file_path = f'{os.path.splitext(report_file_path)[
+                0]}_{ending}'
+            with open(solid_report_file_path, 'w', encoding='utf-8') as solid_report_file:
                 solid_report_file.write(solidified_result)
             print(f"Solidified report saved to: {solid_report_file_path}")
             return solid_report_file_path
         else:
-             print(f"Failed to get a solidified response from {llm_model}.")
-             return None
+            print(f"Failed to get a solidified response from {llm_model}.")
+            return None
     except FileNotFoundError:
         print(f"Error: Report file not found at {report_file_path}")
         return None
@@ -172,15 +176,50 @@ def solidify_report(report_file_path, query_to_use, llm_model='arli_nemo'):
         return None
 
 
+def del_files(contains='report_', doesnotcontain=''):
+    for f in os.listdir('data/crawls'):
+        should_delete = True
+
+        # Only check 'contains' if it's not empty
+        if contains:
+            should_delete = contains in f
+
+        # Only check 'doesnotcontain' if it's not empty
+        if should_delete and doesnotcontain:
+            should_delete = doesnotcontain not in f
+
+        if should_delete:
+            try:
+                full_path = os.path.join('data/crawls', f)
+                os.remove(full_path)
+            except OSError as e:
+                print(f"Error deleting {f}: {e}")
+
+
 if __name__ == '__main__':
     # Example usage:
-#    llm_model = 'openrouter_llama'
-#    llm_model = 'groq_r1'
-#    llm_model = 'amp1_gemma'
-    llm_model = 'arli_nemo'
-    query_to_use = 'TARIFLISTE_ABFRAGE'
-#    report_file_path = process_files_and_analyze(llm_model='arli_nemo', query_to_use)
-    
-    query_to_use = 'SOLIDIFY_REPORT_R1'
-    report_file_path = 'data/crawls/report_20250128.txt'
-    solidify_report(report_file_path, query_to_use, llm_model='groq_r1')
+    #    llm_model = 'openrouter_llama'
+    #    llm_model = 'groq_r1'
+    #    llm_model = 'amp1_gemma'
+    # llm_model = 'arli_nemo'
+    #    query_to_use = 'TARIFLISTE_ABFRAGE'
+    # delete files starting with report_ and not containing solid
+
+    if False:
+        del_files(contains='report_', doesnotcontain='solid')
+        report_file_path = llmanalyze_files(
+            llm_model='mistral_large',
+            files='crawl_',
+            query_to_use='TARIFLISTE_ABFRAGE')
+
+    if True:
+        try:
+            report_file_path
+        except NameError:
+            report_file_path = 'data/crawls/report_20250130.txt'
+        del_files(contains='solid')
+        solidify_report(
+            report_file_path=report_file_path,
+            query_to_use='TARIF_TABELLE',
+            llm_model='groq_r1',
+            ending='tab.md')
