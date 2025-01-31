@@ -3,8 +3,9 @@
 Plugin Name: Strom Tarif Shortcodes
 Plugin URI: 
 Description: Ein Plugin, das Shortcodes für Stromtariflisten und Diagramme bereitstellt
-Version: 1.0
-Author: 
+Version: 1.0.3
+Author: dev@gwen.at
+Author URI: https://skale.dev
 */
 
 // Sicherheitscheck
@@ -75,10 +76,14 @@ class StromTarifPlugin {
         }
 
         if ($atts['layout'] === 'cards') {
-            return $this->render_cards_layout($tarife);
+            $output = $this->render_cards_layout($tarife);
+        $output .= $this->render_attribution();
+        return $output;
         }
 
-        return $this->render_table_layout($tarife);
+        $output = $this->render_table_layout($tarife);
+        $output .= $this->render_attribution();
+        return $output;
     }
 
     private function render_table_layout($tarife) {
@@ -111,7 +116,18 @@ class StromTarifPlugin {
             </table>
         </div>
         <?php
-        return ob_get_clean();
+        $output = ob_get_clean();
+        return $output;
+    }
+
+    private function render_attribution() {
+        return sprintf(
+            '<p class="stromtarife-attribution">Data by <a href="%s" target="_blank" rel="noopener noreferrer">%s</a> / <a href="%s" target="_blank" rel="noopener noreferrer">%s</a></p>',
+            'https://gwen.at',
+            'gwen.at',
+            'https://skale.dev',
+            'skale.dev'
+        );
     }
 
     private function render_cards_layout($tarife) {
@@ -273,7 +289,23 @@ register_activation_hook(__FILE__, function() {
         height: 400px;
         margin: 20px 0;
     }
-    .error-message {
+    .stromtarife-attribution {
+    text-align: right;
+    font-size: 0.8em;
+    color: #666;
+    margin-top: 10px;
+}
+
+.stromtarife-attribution a {
+    color: #666;
+    text-decoration: none;
+}
+
+.stromtarife-attribution a:hover {
+    text-decoration: underline;
+}
+
+.error-message {
         padding: 10px;
         background-color: #ffe6e6;
         border: 1px solid #ff9999;

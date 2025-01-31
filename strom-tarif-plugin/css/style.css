@@ -146,6 +146,23 @@
   }
 }
 
+/* Attribution Styles */
+.stromtarife-attribution {
+  text-align: right;
+  font-size: 0.8em;
+  color: #666;
+  margin-top: 10px;
+}
+
+.stromtarife-attribution a {
+  color: #666;
+  text-decoration: none;
+}
+
+.stromtarife-attribution a:hover {
+  text-decoration: underline;
+}
+
 /* Print-Styles */
 @media print {
   .stromtarife-table-container,
