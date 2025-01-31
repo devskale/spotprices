@@ -24,7 +24,7 @@ class StromTarifPlugin {
     }
 
     public function enqueue_styles() {
-        wp_enqueue_style('stromtarif-styles', plugins_url('css/style.css', __FILE__));
+        wp_enqueue_style('stromtarif-styles', plugins_url('css/style.css', __FILE__)); 
     }
 
     private function get_tarif_data($rows = 10) {
