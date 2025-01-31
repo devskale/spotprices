@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Stromtarif Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      /* Hier kommt der CSS Code aus style.css */
+      .stromtarife-table-container {
+        overflow-x: auto;
+        margin: 20px 0;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+      }
+
+      .stromtarife-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        font-size: 14px;
+      }
+
+      .stromtarife-table th,
+      .stromtarife-table td {
+        padding: 12px 16px;
+        text-align: left;
+        border-bottom: 1px solid #eee;
+      }
+
+      .stromtarife-table th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        color: #333;
+      }
+
+      .stromtarife-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 24px;
+        margin: 20px 0;
+      }
+
+      .tarif-card {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        transition: transform 0.2s ease;
+      }
+
+      .tarif-card:hover {
+        transform: translateY(-2px);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <h2>Tarifliste als Tabelle</h2>
+      <div class="stromtarife-table-container">
+        <table class="stromtarife-table">
+          <thead>
+            <tr>
+              <th>Stromanbieter</th>
+              <th>Tarifname</th>
+              <th>Tarifart</th>
+              <th>Preisanpassung</th>
+              <th>Strompreis</th>
+              <th>Kurzbeschreibung</th>
+            </tr>
+          </thead>
+          <tbody id="tarifTable">
+            <!-- Wird durch JavaScript gefüllt -->
+          </tbody>
+        </table>
+      </div>
+
+      <h2>Tarifliste als Cards</h2>
+      <div class="stromtarife-cards" id="tarifCards">
+        <!-- Wird durch JavaScript gefüllt -->
+      </div>
+
+      <h2>Diagramm</h2>
+      <div style="height: 400px">
+        <canvas id="tarifChart"></canvas>
+      </div>
+    </div>
+
+    <script>
+      // Daten vom API abrufen
+      async function fetchTarife() {
+        try {
+          const response = await fetch(
+            "https://skaledev-servestromtarifeendpoint.web.val.run/?contentformat=json&rows=10"
+          );
+          const data = await response.json();
+          renderTable(data);
+          renderCards(data);
+          renderChart(data);
+        } catch (error) {
+          console.error("Fehler beim Laden der Daten:", error);
+        }
+      }
+
+      // Tabelle rendern
+      function renderTable(tarife) {
+        const tableBody = document.getElementById("tarifTable");
+        tableBody.innerHTML = tarife
+          .map(
+            (tarif) => `
+                <tr>
+                    <td>${tarif.stromanbieter}</td>
+                    <td>${tarif.tarifname}</td>
+                    <td>${tarif.tarifart}</td>
+                    <td>${tarif.preisanpassung}</td>
+                    <td>${tarif.strompreis}</td>
+                    <td>${tarif.kurzbeschreibung}</td>
+                </tr>
+            `
+          )
+          .join("");
+      }
+
+      // Cards rendern
+      function renderCards(tarife) {
+        const cardsContainer = document.getElementById("tarifCards");
+        cardsContainer.innerHTML = tarife
+          .map(
+            (tarif) => `
+                <div class="tarif-card">
+                    <div class="tarif-header">
+                        <h3>${tarif.tarifname}</h3>
+                        <span class="anbieter">${tarif.stromanbieter}</span>
+                    </div>
+                    <div class="tarif-body">
+                        <div class="tarif-price">${tarif.strompreis}</div>
+                        <div class="tarif-details">
+                            <p><strong>Art:</strong> ${tarif.tarifart}</p>
+                            <p><strong>Anpassung:</strong> ${tarif.preisanpassung}</p>
+                            <p class="description">${tarif.kurzbeschreibung}</p>
+                        </div>
+                    </div>
+                </div>
+            `
+          )
+          .join("");
+      }
+
+      // Chart rendern
+      function renderChart(tarife) {
+        const ctx = document.getElementById("tarifChart").getContext("2d");
+        new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: tarife.map((t) => t.tarifname),
+            datasets: [
+              {
+                label: "Stromtarife",
+                data: tarife.map((_, i) => 10 + i * 5), // Beispieldaten
+                backgroundColor: "rgba(46, 204, 113, 0.2)",
+                borderColor: "rgba(46, 204, 113, 1)",
+                borderWidth: 1,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+              },
+            },
+          },
+        });
+      }
+
+      // Initial laden
+      fetchTarife();
+    </script>
+  </body>
+</html>
