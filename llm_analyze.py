@@ -205,7 +205,7 @@ if __name__ == '__main__':
     #    query_to_use = 'TARIFLISTE_ABFRAGE'
     # delete files starting with report_ and not containing solid
 
-    if False:
+    if True:
         del_files(contains='report_', doesnotcontain='solid')
         report_file_path = llmanalyze_files(
             llm_model='mistral_large',
