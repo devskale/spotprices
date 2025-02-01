@@ -13,6 +13,11 @@ sys.path.append(str(project_root))
 
 
 # tests/test_gaps.py
+# This script identifies and fills gaps in the historical spot price data stored in the database.
+# It operates by first querying the database to find dates for which no spot price data exists.
+# Then, it uses the `awattar` API client to fetch missing data for those dates.
+# The fetched data is then inserted or updated in the database.
+# The script handles potential issues such as the absence of data and attempts to intelligently skip fetching data for the next day if it's too early.
 def find_missing_dates(session):
     stmt = text("SELECT DISTINCT date(datetime(start_timestamp, 'unixepoch')) FROM spot_prices WHERE source='awattar' ORDER BY start_timestamp")
     dates = [row[0] for row in session.execute(stmt)]

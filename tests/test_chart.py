@@ -1,22 +1,25 @@
 # tests/test_chart.py
+from config import CONFIG
+from db.models.spot_prices import SpotPrice
+from sqlalchemy.orm import Session
+from sqlalchemy import create_engine, select
 from pathlib import Path
 import sys
 from datetime import datetime, timedelta
 project_root = Path(__file__).parents[1]
 sys.path.append(str(project_root))
 
-from sqlalchemy import create_engine, select
-from sqlalchemy.orm import Session
-from db.models.spot_prices import SpotPrice
-from config import CONFIG
 
-# tests/test_chart.py
+# This script defines functions to visualize spot price data as an ASCII chart.
+# It fetches spot prices from a database and then generates a textual representation of the price fluctuations over time.
+# The chart includes a price scale on the left and a time axis with day labels at the bottom.
+
 def print_chart(prices, width=80, height=15):
     prices_sorted = sorted(prices, key=lambda x: x.start_timestamp)
     min_price = 0
     max_price = max(p.price for p in prices)
     price_range = max_price - min_price
-    
+
     chart = []
     for i in range(height):
         row = []
@@ -27,12 +30,12 @@ def print_chart(prices, width=80, height=15):
             else:
                 row.append(' ')
         chart.append(row)
-    
+
     print("\nPrice Chart (ct/kWh):")
     for i, row in enumerate(chart):
         price_label = f"{max_price - (i * price_range / (height - 1)):5.2f}"
         print(f"{price_label} |{''.join(row)}")
-    
+
     # Print time axis with ticks
     time_axis = '      +'
     for i in range(len(prices_sorted)):
@@ -42,7 +45,7 @@ def print_chart(prices, width=80, height=15):
         else:
             time_axis += '-'
     print(time_axis)
-    
+
     # Print day names aligned with vertical bars
     day_line = '       '
     for i, p in enumerate(prices_sorted):
@@ -58,23 +61,25 @@ def print_chart(prices, width=80, height=15):
 def show_last_days(days=2):
     db_file = CONFIG['db_path'] / CONFIG['db_file']
     engine = create_engine(f'sqlite:///{db_file}')
-    
+
     today = datetime.now().date()
     tomorrow = today + timedelta(days=1)
     end_time = datetime.combine(tomorrow, datetime.max.time())
-    start_time = datetime.combine(today - timedelta(days=days), datetime.min.time())
-    
+    start_time = datetime.combine(
+        today - timedelta(days=days), datetime.min.time())
+
     with Session(engine) as session:
         stmt = select(SpotPrice).where(
             SpotPrice.start_timestamp >= int(start_time.timestamp()),
             SpotPrice.start_timestamp <= int(end_time.timestamp()),
             SpotPrice.source == 'awattar'
         ).order_by(SpotPrice.start_timestamp)
-        
+
         prices = session.execute(stmt).scalars().all()
-        
+
         if prices:
-            print(f"\nShowing Awattar prices from {start_time.date()} to {end_time.date()}")
+            print(f"\nShowing Awattar prices from {
+                  start_time.date()} to {end_time.date()}")
             print_chart(prices)
         else:
             print("No data found for the specified period")
