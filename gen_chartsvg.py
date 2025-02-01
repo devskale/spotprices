@@ -62,9 +62,9 @@ def gen_chart_svg(startday, endday, output_file='price_chart.svg', minmaxdot=Fal
     </style>
     <!-- Gradient definition -->
     <linearGradient id="priceGradient" gradientUnits="userSpaceOnUse" x1="0" y1="50" x2="0" y2="350">
-      <stop offset="0%" stop-color="#C2E4C9" stop-opacity="1"/>  <!-- Lighter Green -->
-      <stop offset="60%" stop-color="#C2E4C9" stop-opacity="0.2"/> <!-- Softer transition -->
-      <stop offset="100%" stop-color="#C2E4C9" stop-opacity="0.0"/> <!-- Transparent -->
+      <stop offset="0%" stop-color="#6bc86e" stop-opacity="1"/>  <!-- Lighter Green -->
+      <stop offset="60%" stop-color="#6bc86e" stop-opacity="0.2"/> <!-- Softer transition -->
+      <stop offset="100%" stop-color="#6bc86e" stop-opacity="0.0"/> <!-- Transparent -->
     </linearGradient>
     <!-- Title -->
     <text x="{width/2}" y="25" text-anchor="middle" class="title">
@@ -177,7 +177,7 @@ def gen_chart_svg(startday, endday, output_file='price_chart.svg', minmaxdot=Fal
 
 if __name__ == "__main__":
     today = datetime.now().date()
-    startdate = today - timedelta(days=4)
+    startdate = today - timedelta(days=5)
     enddate = today + timedelta(days=1)
     outputfilename = f"price_chart_{startdate.strftime(
         '%Y-%m-%d')}_{enddate.strftime('%Y-%m-%d')}.svg"
