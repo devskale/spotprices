@@ -176,10 +176,29 @@ def gen_chart_svg(startday, endday, output_file='price_chart.svg', minmaxdot=Fal
 
 
 if __name__ == "__main__":
+
+    # generate today's chart
+    today = datetime.now().date()
+    startdate = today
+    enddate = today + timedelta(days=1)
+    outputfilename = f"price_chart_{startdate.strftime(
+        '%Y-%m-%d')}.svg"
+
+    today = datetime.now().date()
+    gen_chart_svg(startday=startdate,
+                  endday=enddate,
+                  output_file=outputfilename,
+                  minmaxdot=True)
+
+    # generate week chart
     today = datetime.now().date()
     startdate = today - timedelta(days=5)
     enddate = today + timedelta(days=1)
     outputfilename = f"price_chart_{startdate.strftime(
         '%Y-%m-%d')}_{enddate.strftime('%Y-%m-%d')}.svg"
-    gen_chart_svg(startday=startdate, endday=enddate,
-                  output_file=outputfilename, minmaxdot=True)
+
+    today = datetime.now().date()
+    gen_chart_svg(startday=startdate,
+                  endday=enddate,
+                  output_file=outputfilename,
+                  minmaxdot=True)
