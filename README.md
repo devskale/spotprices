@@ -15,8 +15,10 @@ This project provides a comprehensive system for collecting, analyzing, and visu
 ```
 ├── api/                 # API client implementations
 ├── db/                  # Database models and operations
+├── electricity/         # fastapi api used by wordpress plugin to read data
 ├── strom-tarif-plugin/  # WordPress plugin
 └── tests/              # Test suite
+
 ```
 
 ## Features
@@ -68,6 +70,16 @@ The `strom-tarif-plugin` provides:
 - Responsive design
 - API integration with caching
 - Custom styling options
+
+### 5. Electricity FastAPI
+
+The `electricity API` provides:
+
+- Serving for retrieving Spotprice and Tarif data.
+- Bearer TOKEN Security
+- serving eg
+  - tarif table in json
+  - spotprice chart as svg or png
 
 ## Configuration
 

@@ -19,6 +19,8 @@ spotprices/
 │   └── smartenergy/
 │       └── client.py         # SmartEnergy API client (fetch spot prices)
 │
+├── electricity/                # fastAPI code for serving WP Plugin access
+│
 ├── utils/                     # Helper functions
 │   ├── visualizer.py         # Data visualization (ASCII charts, exports)
 │   └── datetime_helper.py    # DateTime conversion and handling
