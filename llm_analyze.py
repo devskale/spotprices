@@ -216,7 +216,7 @@ if __name__ == '__main__':
         try:
             report_file_path
         except NameError:
-            report_file_path = 'data/crawls/report_20250130.txt'
+            report_file_path = 'data/crawls/report_20250131.txt'
         del_files(contains='solid')
         solidify_report(
             report_file_path=report_file_path,
