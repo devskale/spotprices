@@ -177,6 +177,13 @@ def gen_chart_svg(startday, endday, output_file='price_chart.svg', minmaxdot=Fal
 
 if __name__ == "__main__":
 
+    # delete all svg and png files in the data/charts directory
+    chart_dir = Path(__file__).resolve().parents[0] / "data" / "charts"
+    for file in chart_dir.glob("*.svg"):
+        file.unlink()
+    for file in chart_dir.glob("*.png"):
+        file.unlink()
+
     # generate today's chart
     today = datetime.now().date()
     startdate = today
