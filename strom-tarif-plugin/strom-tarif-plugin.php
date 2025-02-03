@@ -1,124 +1,175 @@
 <?php
-/*
-Plugin Name: Strom Tarif Shortcodes
-Plugin URI: 
-Description: Ein Plugin, das Shortcodes für Stromtariflisten und Diagramme bereitstellt
-Version: 1.0.3
-Author: dev@gwen.at
-Author URI: https://skale.dev
-*/
+/**
+ * Plugin Name: Strom Tarif Plugin
+ * Plugin URI: https://example.com/plugins/strom-tarif-plugin
+ * Description: Displays electricity tariff information from API
+ * Version: 1.0.0
+ * Author: Your Name
+ * License: GPL v2 or later
+ * Text Domain: strom-tarif
+ */
 
-// Sicherheitscheck
-if (!defined('ABSPATH')) {
-    exit;
+if (!defined('WPINC')) {
+    die;
 }
 
-class StromTarifPlugin {
-    private $api_url = 'https://skaledev-servestromtarifeendpoint.web.val.run/';
-    private $cache_time = 3600; // 1 Stunde Cache-Zeit
+class Strom_Tarif_Plugin {
+    private static $instance = null;
+    private $cache_time = 3600; // 1 hour cache
 
-    public function __construct() {
-        add_shortcode('tarifliste', array($this, 'tarifliste_shortcode'));
-        add_shortcode('diagrammxyz', array($this, 'diagramm_shortcode'));
-        add_action('wp_enqueue_scripts', array($this, 'enqueue_styles'));
+    public static function get_instance() {
+        if (null === self::$instance) {
+            self::$instance = new self();
+        }
+        return self::$instance;
     }
 
-    public function enqueue_styles() {
-        wp_enqueue_style('stromtarif-styles', plugins_url('css/style.css', __FILE__)); 
+    private function __construct() {
+        add_shortcode('display_strom_tariffs', array($this, 'display_tariffs_shortcode'));
+        add_action('admin_menu', array($this, 'add_admin_menu'));
+        add_action('admin_init', array($this, 'register_settings'));
     }
 
-    private function get_tarif_data($rows = 10) {
-        // Cache-Key generieren
-        $cache_key = 'stromtarife_' . $rows;
-        
-        // Prüfen ob Daten im Cache sind
+    private function fetch_tariff_data($rows = 10) {
+        // Check cache first
+        $cache_key = 'strom_tariff_data_' . $rows;
         $cached_data = get_transient($cache_key);
+
         if ($cached_data !== false) {
             return $cached_data;
         }
 
-        // API-URL mit Parametern
-        $request_url = add_query_arg(array(
-            'contentformat' => 'json',
-            'rows' => $rows
-        ), $this->api_url);
+         $api_url = 'https://amd1.mooo.com/api/electricity/tarifliste?rows=' . intval($rows) . '&contentformat=json';
 
-        // API-Anfrage
-        $response = wp_remote_get($request_url);
-
+        $response = wp_remote_get($api_url);
+        
         if (is_wp_error($response)) {
-            return array('error' => $response->get_error_message());
+            return array('error' => 'Failed to fetch data from API');
         }
 
         $body = wp_remote_retrieve_body($response);
         $data = json_decode($body, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            return array('error' => 'Ungültige Daten vom API-Endpunkt');
+            return array('error' => 'Failed to parse JSON response');
         }
 
-        // Daten im Cache speichern
+        // Cache the data
         set_transient($cache_key, $data, $this->cache_time);
 
         return $data;
     }
-
-    public function tarifliste_shortcode($atts) {
-        $atts = shortcode_atts(array(
-            'rows' => 10,
-            'layout' => 'table', // table oder cards
-        ), $atts);
-
-        $tarife = $this->get_tarif_data($atts['rows']);
-
-        if (isset($tarife['error'])) {
-            return '<div class="error-message">' . esc_html($tarife['error']) . '</div>';
+    
+     private function render_table_layout($data, $selected_provider = '') {
+        if (isset($data['error'])) {
+            return '<div class="error-message">' . esc_html($data['error']) . '</div>';
         }
 
-        if ($atts['layout'] === 'cards') {
-            $output = $this->render_cards_layout($tarife);
+        $output = '<div class="strom-tariffs">';
+        $output .= '<h2>Strom Tariffs</h2>';
+        $output .= '<table class="tariff-table">';
+        $output .= '<thead><tr>';
+        
+        // Custom headers
+        $headers = array(
+            'provider_tariff' => array('Anbieter', 'Tarif'),
+            'tarif_type' => array('Tarifart', 'Preisanpassung'),
+            'strompreis' => 'Strompreis',
+            'kurzbeschreibung' => 'Beschreibung'
+        );
+        
+        foreach ($headers as $header) {
+            if (is_array($header)) {
+                $output .= '<th class="two-line-header">';
+                $output .= '<div class="primary-text">' . esc_html($header[0]) . '</div>';
+                $output .= '<div class="secondary-text">' . esc_html($header[1]) . '</div>';
+                $output .= '</th>';
+            } else {
+                $output .= '<th>' . esc_html($header) . '</th>';
+            }
+        }
+        
+        $output .= '</tr></thead><tbody>';
+
+       foreach ($data as $tariff) {
+            if (empty($selected_provider) || $tariff['stromanbieter'] === $selected_provider) {
+              $output .= '<tr>';
+            
+              // Provider and Tariff Name combined
+              $output .= '<td class="two-line-cell">';
+              $output .= '<div class="primary-text">' . esc_html($tariff['stromanbieter']) . '</div>';
+              $output .= '<div class="secondary-text">' . esc_html($tariff['tarifname']) . '</div>';
+              $output .= '</td>';
+            
+              // Tarif Type and Price Adjustment combined
+              $output .= '<td class="two-line-cell">';
+              $output .= '<div class="primary-text">' . esc_html($tariff['tarifart']) . '</div>';
+              $output .= '<div class="secondary-text">' . esc_html($tariff['preisanpassung']) . '</div>';
+              $output .= '</td>';
+            
+              $output .= '<td>' . esc_html($tariff['strompreis']) . '</td>';
+              $output .= '<td>' . esc_html($tariff['kurzbeschreibung']) . '</td>';
+            
+            $output .= '</tr>';
+            }
+        }
+        $output .= '</tbody></table>';
         $output .= $this->render_attribution();
+        $output .= '</div>';
         return $output;
+    }
+    
+    private function render_cards_layout($data, $selected_provider = '', $shortcode_provider = '') {
+        if (isset($data['error'])) {
+            return '<div class="error-message">' . esc_html($data['error']) . '</div>';
         }
 
-        $output = $this->render_table_layout($tarife);
-        $output .= $this->render_attribution();
+         $output = '<div class="strom-tariffs">';
+        $output .= '<h2>Strom Tariffs</h2>';
+        $output .= '<div class="tariff-cards">';
+
+
+        foreach ($data as $tariff) {
+            $provider_match = empty($shortcode_provider) ? (empty($selected_provider) || $tariff['stromanbieter'] === $selected_provider) : ($tariff['stromanbieter'] === $shortcode_provider);
+            if ($provider_match) {
+                $output .= '<div class="tariff-card">';
+            
+                // Card Header
+                $output .= '<div class="tariff-card-header">';
+                $output .= '<div class="provider">' . esc_html($tariff['stromanbieter']) . '</div>';
+                $output .= '<div class="tariff-name">' . esc_html($tariff['tarifname']) . '</div>';
+                $output .= '</div>';
+
+                // Card Body
+                $output .= '<div class="tariff-card-body">';
+            
+                // Price Section
+                $output .= '<div class="tariff-price">' . esc_html($tariff['strompreis']) . '</div>';
+            
+                // Details Section
+                $output .= '<div class="tariff-details">';
+                $output .= '<div class="tariff-type">';
+                $output .= '<strong>' . esc_html($tariff['tarifart']) . '</strong><br>';
+                $output .= '<span class="adjustment">' . esc_html($tariff['preisanpassung']) . '</span>';
+                $output .= '</div>';
+            
+                $output .= '<div class="tariff-description">';
+                $output .= esc_html($tariff['kurzbeschreibung']);
+                $output .= '</div>';
+            
+                $output .= '</div>'; // End details
+                $output .= '</div>'; // End card body
+                $output .= '</div>'; // End card
+             }
+        }
+
+
+        $output .= '</div>'; // End cards container
+         $output .= $this->render_attribution();
+        $output .= '</div>'; // End strom-tariffs
         return $output;
     }
 
-    private function render_table_layout($tarife) {
-        ob_start();
-        ?>
-        <div class="stromtarife-table-container">
-            <table class="stromtarife-table">
-                <thead>
-                    <tr>
-                        <th>Anbieter</th>
-                        <th>Tarif</th>
-                        <th>Art</th>
-                        <th>Anpassung</th>
-                        <th>Preis</th>
-                        <th>Info</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($tarife as $tarif): ?>
-                    <tr>
-                        <td><?php echo esc_html($tarif['stromanbieter']); ?></td>
-                        <td><?php echo esc_html($tarif['tarifname']); ?></td>
-                        <td><?php echo esc_html($tarif['tarifart']); ?></td>
-                        <td><?php echo esc_html($tarif['preisanpassung']); ?></td>
-                        <td><?php echo esc_html($tarif['strompreis']); ?></td>
-                        <td><?php echo esc_html($tarif['kurzbeschreibung']); ?></td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
-        <?php
-        $output = ob_get_clean();
-        return $output;
-    }
 
     private function render_attribution() {
         return sprintf(
@@ -130,194 +181,147 @@ class StromTarifPlugin {
         );
     }
 
-    private function render_cards_layout($tarife) {
-        ob_start();
-        ?>
-        <div class="stromtarife-cards">
-            <?php foreach ($tarife as $tarif): ?>
-            <div class="tarif-card">
-                <div class="tarif-header">
-                    <h3><?php echo esc_html($tarif['tarifname']); ?></h3>
-                    <span class="anbieter"><?php echo esc_html($tarif['stromanbieter']); ?></span>
-                </div>
-                <div class="tarif-body">
-                    <div class="tarif-price"><?php echo esc_html($tarif['strompreis']); ?></div>
-                    <div class="tarif-details">
-                        <p><strong>Art:</strong> <?php echo esc_html($tarif['tarifart']); ?></p>
-                        <p><strong>Anpassung:</strong> <?php echo esc_html($tarif['preisanpassung']); ?></p>
-                        <p class="description"><?php echo esc_html($tarif['kurzbeschreibung']); ?></p>
-                    </div>
-                </div>
-            </div>
-            <?php endforeach; ?>
-        </div>
-        <?php
-        return ob_get_clean();
-    }
+    public function display_tariffs_shortcode($atts) {
+        $atts = shortcode_atts(
+            array(
+                'layout' => 'table', // Options: table, cards
+                'rows'   => get_option('strom_tarif_table_rows', 10),      // Default number of rows
+                'stromanbieter' => '', // New parameter for filtering by provider
+            ),
+            $atts,
+            'display_strom_tariffs'
+        );
 
-    public function diagramm_shortcode($atts) {
-        $atts = shortcode_atts(array(
-            'type' => 'bar',
-            'title' => 'Tarifübersicht'
-        ), $atts);
+        wp_enqueue_style('strom-tarif-styles', plugins_url('css/style.css', __FILE__));
+        $selected_provider = get_option('strom_tarif_card_provider', '');
+        $data = $this->fetch_tariff_data($atts['rows']);
 
-        $tarife = $this->get_tarif_data(10);
+         if ($atts['layout'] === 'cards') {
+             return $this->render_cards_layout($data, $selected_provider, $atts['stromanbieter']);
+         }
         
-        if (isset($tarife['error'])) {
-            return '<div class="error-message">' . esc_html($tarife['error']) . '</div>';
+        return $this->render_table_layout($data, $atts['stromanbieter']);
+    }
+    
+     public function register_settings() {
+         // Table Rows Setting
+        register_setting( 'strom_tarif_settings_group', 'strom_tarif_table_rows', array('sanitize_callback' => 'absint') );
+        add_settings_section(
+            'strom_tarif_table_settings',
+            'Table Settings',
+            array($this, 'table_settings_section_callback'),
+            'strom-tariffs-settings-page'
+        );
+        add_settings_field(
+            'strom_tarif_table_rows',
+            'Default Table Rows',
+            array($this, 'table_rows_field_callback'),
+            'strom-tariffs-settings-page',
+            'strom_tarif_table_settings'
+        );
+        
+         // Card Provider Setting
+        register_setting('strom_tarif_settings_group', 'strom_tarif_card_provider', array('sanitize_callback' => 'sanitize_text_field'));
+          add_settings_section(
+            'strom_tarif_card_settings',
+            'Card Settings',
+            array($this, 'card_settings_section_callback'),
+            'strom-tariffs-settings-page'
+        );
+        add_settings_field(
+            'strom_tarif_card_provider',
+            'Select Provider for Cards',
+            array($this, 'card_provider_field_callback'),
+            'strom-tariffs-settings-page',
+            'strom_tarif_card_settings'
+        );
+    }
+    
+    public function table_settings_section_callback() {
+        echo '<p>Configure the default settings for the table layout.</p>';
+    }
+     public function card_settings_section_callback() {
+        echo '<p>Configure the settings for the card layout.</p>';
+    }
+      public function table_rows_field_callback() {
+        $rows = get_option('strom_tarif_table_rows', 10);
+        echo '<input type="number" name="strom_tarif_table_rows" value="' . esc_attr($rows) . '" />';
+    }
+    public function card_provider_field_callback() {
+        $selected_provider = get_option('strom_tarif_card_provider', '');
+         $data = $this->fetch_tariff_data(100);
+        if (isset($data['error'])){
+           echo '<p>error</p>';
+           return;
         }
+        echo '<select name="strom_tarif_card_provider">';
+        echo '<option value="" ' . selected($selected_provider, '', false) . '>All</option>';
+         
+           $providers = array_unique(array_column($data, 'stromanbieter'));
+           foreach ($providers as $provider) {
+              echo '<option value="' . esc_attr($provider) . '" ' . selected($selected_provider, $provider, false) . '>' . esc_html($provider) . '</option>';
+            }
+        echo '</select>';
+     }
 
-        // Chart.js einbinden
-        wp_enqueue_script('chartjs', 'https://cdn.jsdelivr.net/npm/chart.js', array(), null, true);
+    public function add_admin_menu() {
+         add_menu_page(
+            'Strom Tariffs',
+            'Strom Tariffs',
+            'manage_options',
+            'strom-tariffs',
+            array($this, 'display_admin_page'),
+            'dashicons-chart-bar',
+            100
+        );
+           add_submenu_page(
+            'strom-tariffs',
+            'Strom Tarif Settings',
+            'Settings',
+            'manage_options',
+            'strom-tariffs-settings-page',
+            array($this, 'display_settings_page')
+        );
+    }
+    
+      public function display_settings_page() {
+          echo '<div class="wrap">';
+          echo '<h1>Strom Tarif Settings</h1>';
+          echo '<form method="post" action="options.php">';
+            settings_fields( 'strom_tarif_settings_group' );
+            do_settings_sections( 'strom-tariffs-settings-page' );
+            submit_button();
+           echo '</form>';
+           echo '</div>';
+      }
 
-        // Daten für das Diagramm aufbereiten
-        $labels = array_map(function($tarif) {
-            return $tarif['tarifname'];
-        }, $tarife);
-
-        // Eindeutige ID für das Canvas-Element
-        $chart_id = 'chart_' . uniqid();
-
-        ob_start();
-        ?>
-        <div class="chart-container">
-            <canvas id="<?php echo esc_attr($chart_id); ?>"></canvas>
-        </div>
-        <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            var ctx = document.getElementById('<?php echo esc_js($chart_id); ?>').getContext('2d');
-            new Chart(ctx, {
-                type: '<?php echo esc_js($atts['type']); ?>',
-                data: {
-                    labels: <?php echo json_encode($labels); ?>,
-                    datasets: [{
-                        label: '<?php echo esc_js($atts['title']); ?>',
-                        data: <?php echo json_encode(range(10, count($labels) * 10, 10)); ?>,
-                        backgroundColor: 'rgba(46, 204, 113, 0.2)',
-                        borderColor: 'rgba(46, 204, 113, 1)',
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true
-                        }
-                    }
-                }
-            });
-        });
-        </script>
-        <?php
-        return ob_get_clean();
+      public function display_admin_page() {
+        echo '<div class="wrap">';
+        echo '<h1>Strom Tariffs</h1>';
+        echo '<p>Use these shortcodes to display the tariff information:</p>';
+        echo '<ul>';
+        echo '<li><code>[display_strom_tariffs]</code> - Display as table (default from settings, default 10 rows)</li>';
+        echo '<li><code>[display_strom_tariffs rows="5"]</code> - Display as table with 5 rows</li>';
+         echo '<li><code>[display_strom_tariffs stromanbieter="oekostrom"]</code> - Display as table filtered for oekostrom (default rows)</li>';
+        echo '<li><code>[display_strom_tariffs layout="cards"]</code> - Display as cards (default from settings, default all providers)</li>';
+        echo '<li><code>[display_strom_tariffs layout="cards" rows="5"]</code> - Display as cards with 5 rows, (card provider setting still applies)</li>';
+        echo '<li><code>[display_strom_tariffs layout="cards" stromanbieter="oekostrom"]</code> - Display as cards filtered for oekostrom (default settings)</li>';
+        echo '</ul>';
+        echo '<h2>Table Layout Preview</h2>';
+        echo do_shortcode('[display_strom_tariffs]');
+        echo '<h2>Table Layout Preview (5 rows)</h2>';
+        echo do_shortcode('[display_strom_tariffs rows="5"]');
+         echo '<h2>Table Layout Preview (oekostrom)</h2>';
+        echo do_shortcode('[display_strom_tariffs stromanbieter="oekostrom"]');
+        echo '<h2>Cards Layout Preview</h2>';
+        echo do_shortcode('[display_strom_tariffs layout="cards"]');
+        echo '<h2>Cards Layout Preview (5 rows)</h2>';
+        echo do_shortcode('[display_strom_tariffs layout="cards" rows="5"]');
+        echo '<h2>Cards Layout Preview (oekostrom)</h2>';
+        echo do_shortcode('[display_strom_tariffs layout="cards" stromanbieter="oekostrom"]');
+        echo '</div>';
     }
 }
 
-// Plugin initialisieren
-$strom_tarif_plugin = new StromTarifPlugin();
-
-// Aktivierungshook
-register_activation_hook(__FILE__, function() {
-    // Stylesheet-Datei erstellen
-    $css = "
-    .stromtarife-table-container {
-        overflow-x: auto;
-        margin: 20px 0;
-    }
-    .stromtarife-table {
-        width: 100%;
-        border-collapse: collapse;
-        font-family: Arial, sans-serif;
-    }
-    .stromtarife-table th,
-    .stromtarife-table td {
-        padding: 12px;
-        border: 1px solid #ddd;
-        text-align: left;
-    }
-    .stromtarife-table th {
-        background-color: #f5f5f5;
-        font-weight: bold;
-    }
-    .stromtarife-table tr:hover {
-        background-color: #f9f9f9;
-    }
-    .stromtarife-cards {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 20px;
-        margin: 20px 0;
-    }
-    .tarif-card {
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        overflow: hidden;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .tarif-header {
-        background-color: #f5f5f5;
-        padding: 15px;
-        border-bottom: 1px solid #ddd;
-    }
-    .tarif-header h3 {
-        margin: 0;
-        color: #333;
-    }
-    .tarif-header .anbieter {
-        font-size: 0.9em;
-        color: #666;
-    }
-    .tarif-body {
-        padding: 15px;
-    }
-    .tarif-price {
-        font-size: 1.4em;
-        color: #2ecc71;
-        margin-bottom: 15px;
-    }
-    .tarif-details p {
-        margin: 5px 0;
-    }
-    .description {
-        font-size: 0.9em;
-        color: #666;
-        margin-top: 10px;
-    }
-    .chart-container {
-        height: 400px;
-        margin: 20px 0;
-    }
-    .stromtarife-attribution {
-    text-align: right;
-    font-size: 0.8em;
-    color: #666;
-    margin-top: 10px;
-}
-
-.stromtarife-attribution a {
-    color: #666;
-    text-decoration: none;
-}
-
-.stromtarife-attribution a:hover {
-    text-decoration: underline;
-}
-
-.error-message {
-        padding: 10px;
-        background-color: #ffe6e6;
-        border: 1px solid #ff9999;
-        color: #cc0000;
-        border-radius: 4px;
-        margin: 10px 0;
-    }";
-
-    // CSS-Datei im Plugin-Verzeichnis speichern
-    $css_dir = plugin_dir_path(__FILE__) . 'css';
-    if (!file_exists($css_dir)) {
-        mkdir($css_dir, 0755, true);
-    }
-    file_put_contents($css_dir . '/style.css', $css);
-});
+// Initialize the plugin
+Strom_Tarif_Plugin::get_instance();

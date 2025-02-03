@@ -1,53 +1,69 @@
 # electricity/api/v1/endpoints/spotprices.py
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Response, HTTPException
 from datetime import date, datetime
 from typing import Dict, List, Union
+import os
+from pathlib import Path
 
 router = APIRouter(prefix="/spotprices", tags=["spotprices"])
 
-DUMMY_CHART_SVG = """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg width="800" height="400" xmlns="http://www.w3.org/2000/svg">
-    <rect width="800" height="400" fill="#f0f0f0"/>
-    <text x="400" y="200" text-anchor="middle" font-family="Arial">
-        Dummy Chart for {date}
-    </text>
-</svg>"""
+# Update with your actual chart directory
+current_dir = Path(__file__).resolve().parents[4]
+CHART_DIR = current_dir / "data" / "charts"
 
-DUMMY_PRICES = [
-    {"timestamp": "2024-02-02T00:00:00", "price": 22.5},
-    {"timestamp": "2024-02-02T01:00:00", "price": 21.8},
-    {"timestamp": "2024-02-02T02:00:00", "price": 20.9},
-    {"timestamp": "2024-02-02T03:00:00", "price": 19.7},
-]
+
+def find_latest_chart():
+    """Finds the latest SVG chart file in the directory."""
+    chart_files = [f for f in os.listdir(
+        CHART_DIR) if f.endswith(".svg") and "price_chart_" in f]
+    if not chart_files:
+        raise HTTPException(status_code=404, detail="No chart files found.")
+
+    # Sort files by date (assuming filename format price_chart_YYYY-MM-DD.svg)
+    chart_files.sort(key=lambda x: datetime.strptime(
+        x.split("_")[-1].split(".")[0], "%Y-%m-%d"), reverse=True)
+
+    latest_chart = chart_files[0]
+    return os.path.join(CHART_DIR, latest_chart)
+
+
+@router.get("/chart/latest")
+async def get_latest_chart() -> Response:
+    """
+    Get the latest SVG chart available.
+    """
+    latest_chart_path = find_latest_chart()
+    with open(latest_chart_path, "rb") as f:
+        svg_content = f.read()
+    return Response(content=svg_content, media_type="image/svg+xml")
 
 
 @router.get("/chart/{date}")
 async def get_chart(date: date) -> Response:
     """
-    Get SVG chart for specified date.
+    Get SVG chart for specified date. Defaults to latest if chart not found for date.
     """
-    svg_content = DUMMY_CHART_SVG.format(date=date)
+    chart_path = CHART_DIR / f"price_chart_{date.strftime('%Y-%m-%d')}.svg"
+    if not chart_path.exists():
+        chart_path = find_latest_chart()
+    with open(chart_path, "rb") as f:
+        svg_content = f.read()
     return Response(content=svg_content, media_type="image/svg+xml")
 
 
 @router.get("/today")
 async def get_today_prices() -> Dict[str, List[Dict[str, Union[str, float]]]]:
     """
-    Get today's spot prices.
+    Get today's spot prices.  (Placeholder - replace with actual data source)
     """
-    return {"prices": DUMMY_PRICES}
+    # Replace with your actual data retrieval logic
+    return {"prices": [{"timestamp": "2024-10-27T12:00:00", "price": 25.2}]}
 
 
 @router.get("/stats")
 async def get_price_stats() -> Dict[str, Dict[str, float]]:
     """
-    Get price statistics.
+    Get price statistics. (Placeholder - replace with actual data source)
     """
-    return {
-        "stats": {
-            "min": 19.7,
-            "max": 22.5,
-            "avg": 21.2,
-            "current": 20.9
-        }
-    }
+    # Replace with your actual data retrieval logic
+    return {"stats": {"average": 25.2, "max": 30.0, "min": 20.0}}
