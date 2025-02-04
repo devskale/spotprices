@@ -1,4 +1,14 @@
 <?php
+<?php
+/**
+ * Admin Panel for Strom Tarif Plugin.
+ *
+ * This file contains only the description of shortcodes.
+ *
+ * Available Shortcodes:
+ * - [strom_tariff]: Renders the tariff information.
+ * - [another_shortcode]: Description.
+ */
 
 class Strom_Tarif_Admin {
 
@@ -32,15 +42,6 @@ class Strom_Tarif_Admin {
         echo '<li><code>[display_strom_tariffs layout="cards"]</code> - Display as cards (default from settings, default all providers)</li>';
         echo '<li><code>[display_strom_tariffs layout="cards" rows="5"]</code> - Display as cards with 5 rows (card provider setting still applies)</li>';
         echo '</ul>';
-        
-        // Add settings form for entering API key and other settings.
-        echo '<h2>Settings</h2>';
-        echo '<form method="post" action="options.php">';
-        settings_fields('strom_tarif_settings_group');
-        do_settings_sections('strom-tariffs-settings-page');
-        submit_button();
-        echo '</form>';
-        
         echo '</div>';
     }
 
