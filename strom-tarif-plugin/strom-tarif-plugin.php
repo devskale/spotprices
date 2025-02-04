@@ -1,17 +1,17 @@
 <?php
 /**
  * Plugin Name: Strom Tarif Plugin
- * Plugin URI: https://example.com/plugins/strom-tarif-plugin
- * Description: Displays electricity tariff information from API
- * Version: 1.0.0
- * Author: Your Name
- * License: GPL v2 or later
+ * Plugin URI: https://skale.dev/plugins/strom-tarif-plugin
+ * Description: Displays electricity tariff information from API.
+ * Version:     1.0.2
+ * Author:      dev@skale.dev
+ * License:     GPL v2 or later
  * Text Domain: strom-tarif
  */
 
-if (!defined('WPINC')) {
-    die;
-}
+defined( 'ABSPATH' ) or die( 'No script kiddies please!' );
+
+require_once plugin_dir_path(__FILE__) . 'admin.php'; // Include admin.php
 
 class Strom_Tarif_Plugin {
     private static $instance = null;
@@ -26,41 +26,91 @@ class Strom_Tarif_Plugin {
 
     private function __construct() {
         add_shortcode('display_strom_tariffs', array($this, 'display_tariffs_shortcode'));
-        add_action('admin_menu', array($this, 'add_admin_menu'));
-        add_action('admin_init', array($this, 'register_settings'));
+        add_shortcode('stromgraph', array($this, 'display_graph_shortcode'));
     }
 
-    private function fetch_tariff_data($rows = 10) {
-        // Check cache first
-        $cache_key = 'strom_tariff_data_' . $rows;
-        $cached_data = get_transient($cache_key);
-
-        if ($cached_data !== false) {
-            return $cached_data;
+    private function get_api_headers() {
+        $api_key = get_option('strom_tarif_api_key', '');
+        $headers = [];
+        if (!empty($api_key)) {
+            $headers['Authorization'] = 'Bearer ' . $api_key;
         }
+        return $headers;
+    }
 
-         $api_url = 'https://amd1.mooo.com/api/electricity/tarifliste?rows=' . intval($rows) . '&contentformat=json';
+    private function fetch_api_data($url) {
+        $response = wp_remote_get($url, ['headers' => $this->get_api_headers()]);
 
-        $response = wp_remote_get($api_url);
-        
         if (is_wp_error($response)) {
-            return array('error' => 'Failed to fetch data from API');
+            error_log("API request failed: " . $response->get_error_message()); // Log the error for debugging
+            return ['error' => 'Failed to fetch data from API'];
         }
 
         $body = wp_remote_retrieve_body($response);
         $data = json_decode($body, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            return array('error' => 'Failed to parse JSON response');
+            error_log("JSON decode failed: " . json_last_error_msg());
+            return ['error' => 'Failed to parse JSON response'];
         }
-
-        // Cache the data
-        set_transient($cache_key, $data, $this->cache_time);
 
         return $data;
     }
+
+    private function fetch_graph_data() {
+        // Check cache first
+        $cache_key = 'strom_graph_data';
+        $cached_data = get_transient($cache_key);
     
-     private function render_table_layout($data, $selected_provider = '') {
+        if ($cached_data !== false) {
+            return $cached_data;
+        }
+    
+        $api_url = 'https://amd1.mooo.com/api/electricity/spotprices/chart/latest';
+        
+        $response = wp_remote_get($api_url);
+        
+        if (is_wp_error($response)) {
+            return array('error' => 'Failed to fetch graph from API');
+        }
+    
+        $body = wp_remote_retrieve_body($response);
+        
+        // Cache the SVG data
+        set_transient($cache_key, $body, $this->cache_time);
+        
+        return $body;
+    }    
+
+    public function display_graph_shortcode($atts) {
+        $graph_data = $this->fetch_graph_data();
+        
+        if (is_array($graph_data) && isset($graph_data['error'])) {
+            return '<div class="error-message">' . esc_html($graph_data['error']) . '</div>';
+        }
+        
+        $output = '<div class="strom-graph">';
+        $output .= $graph_data; // SVG is already sanitized by WordPress
+        $output .= $this->render_attribution();
+        $output .= '</div>';
+        
+        return $output;
+    }
+
+    private function fetch_tariff_data($rows = 10) {
+        $cache_key = 'strom_tariff_data_' . $rows;
+        $cached_data = get_transient($cache_key);
+        if ($cached_data !== false) {
+            return $cached_data;
+        }
+
+        $api_url = 'https://amd1.mooo.com/api/electricity/tarifliste?rows=' . intval($rows) . '&contentformat=json';
+        $data = $this->fetch_api_data($api_url);
+        set_transient($cache_key, $data, $this->cache_time);
+        return $data;
+    }
+
+    private function render_table_layout($data, $selected_provider = '') {
         if (isset($data['error'])) {
             return '<div class="error-message">' . esc_html($data['error']) . '</div>';
         }
@@ -120,10 +170,10 @@ class Strom_Tarif_Plugin {
     }
     
     private function render_cards_layout($data, $selected_provider = '', $shortcode_provider = '') {
-        if (isset($data['error'])) {
-            return '<div class="error-message">' . esc_html($data['error']) . '</div>';
-        }
-
+            if (isset($data['error'])) {
+                return '<div class="error-message">' . esc_html($data['error']) . '</div>';
+            }
+    
          $output = '<div class="strom-tariffs">';
         $output .= '<h2>Strom Tariffs</h2>';
         $output .= '<div class="tariff-cards">';
@@ -180,148 +230,31 @@ class Strom_Tarif_Plugin {
             'skale.dev'
         );
     }
-
     public function display_tariffs_shortcode($atts) {
         $atts = shortcode_atts(
             array(
-                'layout' => 'table', // Options: table, cards
-                'rows'   => get_option('strom_tarif_table_rows', 10),      // Default number of rows
-                'stromanbieter' => '', // New parameter for filtering by provider
+                'layout' => 'table',
+                'rows'   => absint(get_option('strom_tarif_table_rows', 10)),
+                'stromanbieter' => '',
             ),
             $atts,
             'display_strom_tariffs'
         );
 
+        if ($atts['rows'] <= 0) {
+            return '<div class="error-message">Invalid number of rows.</div>';
+        }
+
         wp_enqueue_style('strom-tarif-styles', plugins_url('css/style.css', __FILE__));
         $selected_provider = get_option('strom_tarif_card_provider', '');
         $data = $this->fetch_tariff_data($atts['rows']);
 
-         if ($atts['layout'] === 'cards') {
-             return $this->render_cards_layout($data, $selected_provider, $atts['stromanbieter']);
-         }
-        
-        return $this->render_table_layout($data, $atts['stromanbieter']);
-    }
-    
-     public function register_settings() {
-         // Table Rows Setting
-        register_setting( 'strom_tarif_settings_group', 'strom_tarif_table_rows', array('sanitize_callback' => 'absint') );
-        add_settings_section(
-            'strom_tarif_table_settings',
-            'Table Settings',
-            array($this, 'table_settings_section_callback'),
-            'strom-tariffs-settings-page'
-        );
-        add_settings_field(
-            'strom_tarif_table_rows',
-            'Default Table Rows',
-            array($this, 'table_rows_field_callback'),
-            'strom-tariffs-settings-page',
-            'strom_tarif_table_settings'
-        );
-        
-         // Card Provider Setting
-        register_setting('strom_tarif_settings_group', 'strom_tarif_card_provider', array('sanitize_callback' => 'sanitize_text_field'));
-          add_settings_section(
-            'strom_tarif_card_settings',
-            'Card Settings',
-            array($this, 'card_settings_section_callback'),
-            'strom-tariffs-settings-page'
-        );
-        add_settings_field(
-            'strom_tarif_card_provider',
-            'Select Provider for Cards',
-            array($this, 'card_provider_field_callback'),
-            'strom-tariffs-settings-page',
-            'strom_tarif_card_settings'
-        );
-    }
-    
-    public function table_settings_section_callback() {
-        echo '<p>Configure the default settings for the table layout.</p>';
-    }
-     public function card_settings_section_callback() {
-        echo '<p>Configure the settings for the card layout.</p>';
-    }
-      public function table_rows_field_callback() {
-        $rows = get_option('strom_tarif_table_rows', 10);
-        echo '<input type="number" name="strom_tarif_table_rows" value="' . esc_attr($rows) . '" />';
-    }
-    public function card_provider_field_callback() {
-        $selected_provider = get_option('strom_tarif_card_provider', '');
-         $data = $this->fetch_tariff_data(100);
-        if (isset($data['error'])){
-           echo '<p>error</p>';
-           return;
+        if ($atts['layout'] === 'cards') {
+            return $this->render_cards_layout($data, $selected_provider, $atts['stromanbieter']);
         }
-        echo '<select name="strom_tarif_card_provider">';
-        echo '<option value="" ' . selected($selected_provider, '', false) . '>All</option>';
-         
-           $providers = array_unique(array_column($data, 'stromanbieter'));
-           foreach ($providers as $provider) {
-              echo '<option value="' . esc_attr($provider) . '" ' . selected($selected_provider, $provider, false) . '>' . esc_html($provider) . '</option>';
-            }
-        echo '</select>';
-     }
 
-    public function add_admin_menu() {
-         add_menu_page(
-            'Strom Tariffs',
-            'Strom Tariffs',
-            'manage_options',
-            'strom-tariffs',
-            array($this, 'display_admin_page'),
-            'dashicons-chart-bar',
-            100
-        );
-           add_submenu_page(
-            'strom-tariffs',
-            'Strom Tarif Settings',
-            'Settings',
-            'manage_options',
-            'strom-tariffs-settings-page',
-            array($this, 'display_settings_page')
-        );
-    }
-    
-      public function display_settings_page() {
-          echo '<div class="wrap">';
-          echo '<h1>Strom Tarif Settings</h1>';
-          echo '<form method="post" action="options.php">';
-            settings_fields( 'strom_tarif_settings_group' );
-            do_settings_sections( 'strom-tariffs-settings-page' );
-            submit_button();
-           echo '</form>';
-           echo '</div>';
-      }
-
-      public function display_admin_page() {
-        echo '<div class="wrap">';
-        echo '<h1>Strom Tariffs</h1>';
-        echo '<p>Use these shortcodes to display the tariff information:</p>';
-        echo '<ul>';
-        echo '<li><code>[display_strom_tariffs]</code> - Display as table (default from settings, default 10 rows)</li>';
-        echo '<li><code>[display_strom_tariffs rows="5"]</code> - Display as table with 5 rows</li>';
-         echo '<li><code>[display_strom_tariffs stromanbieter="oekostrom"]</code> - Display as table filtered for oekostrom (default rows)</li>';
-        echo '<li><code>[display_strom_tariffs layout="cards"]</code> - Display as cards (default from settings, default all providers)</li>';
-        echo '<li><code>[display_strom_tariffs layout="cards" rows="5"]</code> - Display as cards with 5 rows, (card provider setting still applies)</li>';
-        echo '<li><code>[display_strom_tariffs layout="cards" stromanbieter="oekostrom"]</code> - Display as cards filtered for oekostrom (default settings)</li>';
-        echo '</ul>';
-        echo '<h2>Table Layout Preview</h2>';
-        echo do_shortcode('[display_strom_tariffs]');
-        echo '<h2>Table Layout Preview (5 rows)</h2>';
-        echo do_shortcode('[display_strom_tariffs rows="5"]');
-         echo '<h2>Table Layout Preview (oekostrom)</h2>';
-        echo do_shortcode('[display_strom_tariffs stromanbieter="oekostrom"]');
-        echo '<h2>Cards Layout Preview</h2>';
-        echo do_shortcode('[display_strom_tariffs layout="cards"]');
-        echo '<h2>Cards Layout Preview (5 rows)</h2>';
-        echo do_shortcode('[display_strom_tariffs layout="cards" rows="5"]');
-        echo '<h2>Cards Layout Preview (oekostrom)</h2>';
-        echo do_shortcode('[display_strom_tariffs layout="cards" stromanbieter="oekostrom"]');
-        echo '</div>';
+        return $this->render_table_layout($data, $atts['stromanbieter']);
     }
 }
 
-// Initialize the plugin
 Strom_Tarif_Plugin::get_instance();

@@ -67,3 +67,4 @@ docs/_build/
 .aider*
 config.py
 **/price_chart.png
+archive/
