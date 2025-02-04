@@ -9,6 +9,8 @@
  * - [another_shortcode]: Description.
  */
 
+require_once plugin_dir_path(__FILE__) . 'developer.php'; // Include developer settings
+
 class Strom_Tarif_Admin {
 
     public function add_admin_menu() {
@@ -28,6 +30,15 @@ class Strom_Tarif_Admin {
             'manage_options',
             'strom-tariffs-settings-page',
             array($this, 'display_settings_page')
+        );
+        // New Developer subpage
+        add_submenu_page(
+            'strom-tariffs',
+            'Strom Tarif Developer Settings',
+            'Developer',
+            'manage_options',
+            'strom-tariffs-developer-page',
+            'strom_tarif_developer_settings_page'
         );
     }
 

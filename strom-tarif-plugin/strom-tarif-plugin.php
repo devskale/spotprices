@@ -65,8 +65,11 @@ class Strom_Tarif_Plugin {
         if ($cached_data !== false) {
             return $cached_data;
         }
-    
-        $api_url = 'https://amd1.mooo.com/api/electricity/spotprices/chart/latest';
+        // Retrieve the base URL from developer settings:
+        $base_url = get_option('strom_tarif_api_url', 'https://amd1.mooo.com/api'); 
+        // Then construct the full URL:
+        $api_url = $base_url . '/electricity/spotprices/chart/latest';
+        //$api_url = 'https://amd1.mooo.com/api/electricity/spotprices/chart/latest';
         
         $args = array(
             'headers' => $this->get_api_headers(), // Use the get_api_headers method
@@ -111,7 +114,10 @@ class Strom_Tarif_Plugin {
             return $cached_data;
         }
 
-        $api_url = 'https://amd1.mooo.com/api/electricity/tarifliste?rows=' . intval($rows) . '&contentformat=json';
+        // Retrieve the base URL from developer settings:
+        $base_url = get_option('strom_tarif_api_url', 'https://amd1.mooo.com/api'); 
+    // Then construct the full URL:
+        $api_url = $base_url . '/electricity/tarifliste?rows=' . intval($rows) . '&contentformat=json';
         $data = $this->fetch_api_data($api_url);
         set_transient($cache_key, $data, $this->cache_time);
         return $data;
