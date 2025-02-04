@@ -1,5 +1,4 @@
 <?php
-<?php
 /**
  * Admin Panel for Strom Tarif Plugin.
  *
