@@ -3,7 +3,7 @@
  * Plugin Name: Strom Tarif Plugin
  * Plugin URI: https://skale.dev/plugins/strom-tarif-plugin
  * Description: Displays electricity tariff information from API.
- * Version:     1.0.3
+ * Version:     1.0.4
  * Author:      dev@skale.dev
  * License:     GPL v2 or later
  * Text Domain: strom-tarif
@@ -68,7 +68,11 @@ class Strom_Tarif_Plugin {
     
         $api_url = 'https://amd1.mooo.com/api/electricity/spotprices/chart/latest';
         
-        $response = wp_remote_get($api_url);
+        $args = array(
+            'headers' => $this->get_api_headers(), // Use the get_api_headers method
+        );
+        
+        $response = wp_remote_get($api_url, $args);
         
         if (is_wp_error($response)) {
             return array('error' => 'Failed to fetch graph from API');
@@ -80,7 +84,7 @@ class Strom_Tarif_Plugin {
         set_transient($cache_key, $body, $this->cache_time);
         
         return $body;
-    }    
+    }
 
     public function display_graph_shortcode($atts) {
         $graph_data = $this->fetch_graph_data();
