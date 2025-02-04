@@ -88,19 +88,22 @@ class Strom_Tarif_Plugin {
 
     public function display_graph_shortcode($atts) {
         $graph_data = $this->fetch_graph_data();
-        
+    
         if (is_array($graph_data) && isset($graph_data['error'])) {
             return '<div class="error-message">' . esc_html($graph_data['error']) . '</div>';
         }
-        
+    
+        // Remove width and height attributes from SVG, add viewBox
+        $graph_data = str_replace('<svg width="800" height="400"', '<svg viewBox="0 0 800 400"', $graph_data);
+    
         $output = '<div class="strom-graph">';
         $output .= $graph_data; // SVG is already sanitized by WordPress
         $output .= $this->render_attribution();
         $output .= '</div>';
-        
+    
         return $output;
     }
-
+    
     private function fetch_tariff_data($rows = 10) {
         $cache_key = 'strom_tariff_data_' . $rows;
         $cached_data = get_transient($cache_key);
