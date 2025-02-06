@@ -52,14 +52,3 @@ function strom_tarif_api_url_field_callback() {
 
 // Hook the settings initialization
 add_action('admin_init', 'strom_tarif_developer_settings_init');
-// Add the developer settings page to the admin menu
-add_action('admin_menu', function() {
-    add_submenu_page(
-        'strom-tariffs',
-        'Strom Tarif Developer Settings',
-        'Developer',
-        'manage_options',
-        'strom-tariffs-developer-page',
-        'strom_tarif_developer_settings_page'
-    );
-});
