@@ -44,7 +44,7 @@ class Strom_Tarif_Admin {
 
     public function display_admin_page() {
         echo '<div class="wrap">';
-        echo '<h1>Strom Tariffs</h1>';
+        echo '<h1>Strom Tariffs v2.27</h1>';
         echo '<p>Use these shortcodes to display the tariff information:</p>';
         echo '<ul>';
         echo '<li><code>[display_strom_tariffs]</code> - Display as table (default from settings, default 10 rows)</li>';
