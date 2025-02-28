@@ -15,7 +15,7 @@ require_once plugin_dir_path(__FILE__) . 'admin.php'; // Include admin.php
 
 class Strom_Tarif_Plugin {
     private static $instance = null;
-    private $cache_time = 3600; // 1 hour cache
+    private $cache_time = 1; // 1 hour cache
 
     public static function get_instance() {
         if (null === self::$instance) {
@@ -57,22 +57,20 @@ class Strom_Tarif_Plugin {
         return $data;
     }
 
-    private function fetch_graph_data() {
+    private function fetch_graph_data($range = 'singleday') {
         // Check cache first
-        $cache_key = 'strom_graph_data';
+        $cache_key = 'strom_graph_data_' . $range;
         $cached_data = get_transient($cache_key);
     
         if ($cached_data !== false) {
             return $cached_data;
         }
-        // Retrieve the base URL from developer settings:
+        
         $base_url = get_option('strom_tarif_api_url', 'https://amd1.mooo.com/api'); 
-        // Then construct the full URL:
-        $api_url = $base_url . '/electricity/spotprices/chart/latest';
-        //$api_url = 'https://amd1.mooo.com/api/electricity/spotprices/chart/latest';
+        $api_url = $base_url . '/electricity/spotprices/chart/latest?range=' . urlencode($range);
         
         $args = array(
-            'headers' => $this->get_api_headers(), // Use the get_api_headers method
+            'headers' => $this->get_api_headers(),
         );
         
         $response = wp_remote_get($api_url, $args);
@@ -90,8 +88,20 @@ class Strom_Tarif_Plugin {
     }
 
     public function display_graph_shortcode($atts) {
-        $graph_data = $this->fetch_graph_data();
-    
+        $atts = shortcode_atts(
+            array(
+                'range' => 'singleday', // Default to single day view
+            ),
+            $atts,
+            'stromgraph'
+        );
+
+        // Validate range parameter
+        $valid_ranges = array('singleday', 'range');
+        $range = in_array($atts['range'], $valid_ranges) ? $atts['range'] : 'singleday';
+
+        $graph_data = $this->fetch_graph_data($range);
+        
         if (is_array($graph_data) && isset($graph_data['error'])) {
             return '<div class="error-message">' . esc_html($graph_data['error']) . '</div>';
         }
@@ -129,7 +139,7 @@ class Strom_Tarif_Plugin {
         }
 
         $output = '<div class="strom-tariffs">';
-        $output .= '<h2>Strom Tariffs</h2>';
+        $output .= '<h2>Strom Tarife</h2>';
         $output .= '<table class="tariff-table">';
         $output .= '<thead><tr>';
         
