@@ -82,7 +82,7 @@ async def get_tarifliste(
     rows: int = Query(default=10, ge=1, le=100),
     # Added to match WordPress expectations
     contentformat: str = Query(default="json")
-) -> List[TarifInfo]:
+) -> dict:
     """
     Get list of electricity tariffs.
 
@@ -91,12 +91,19 @@ async def get_tarifliste(
         contentformat: Format of the response (always json)
 
     Returns:
-        List of tariffs
+        Dictionary with tariffs list and metadata
     """
     try:
         # Get latest report file
-        report_file, _ = get_latest_report()
+        report_file, modified_time = get_latest_report()
 
+        # Extract date from filename (format: report_YYYYMMDD_tab.md)
+        date_match = re.search(r'report_(\d{4})(\d{2})(\d{2})_tab\.md$', report_file.name)
+        report_date = None
+        if date_match:
+            year, month, day = date_match.groups()
+            report_date = f"{year}-{month}-{day}"
+        
         # Read and parse report content
         with open(report_file, 'r', encoding='utf-8') as f:
             content = f.read()
@@ -104,9 +111,14 @@ async def get_tarifliste(
         # Parse markdown table into tariff objects
         tarife = parse_markdown_table(content)
 
-        # Return requested number of tariffs directly as a list
-        # This matches what the WordPress plugin expects
-        return tarife[:rows]
+        # Return requested number of tariffs with metadata
+        return {
+            "tariffs": tarife[:rows],
+            "metadata": {
+                "report_date": report_date,
+                "last_modified": modified_time.isoformat()
+            }
+        }
 
     except HTTPException:
         raise
