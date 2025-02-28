@@ -49,8 +49,8 @@ def db_stat_timerange(day: datetime = datetime.today(), days: int = 1) -> list[D
         end_day = day
         start_ts = int(datetime(start_day.year, start_day.month,
                                 start_day.day).timestamp())
-        end_ts = int(datetime(end_day.year, end_day.month,
-                              end_day.day + 1).timestamp())
+        end_ts = int((datetime(end_day.year, end_day.month,
+                     end_day.day) + timedelta(days=1)).timestamp())
 
         for source in ['awattar']:
             prices = (session.query(SpotPrice)

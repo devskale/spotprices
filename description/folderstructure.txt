@@ -1,37 +1,64 @@
 spotprices/
 │
-├── config.py
+├── config.py                  # Configuration settings for the application
 │
 ├── db/
-│   ├── models/                # Database table definitions
-│   │   ├── spot_prices.py     # SpotPrice table definition (timestamps, price, source)
-│   │   ├── daily_stats.py     # DailyStats table (min/max/avg prices per day)
-│   │   └── config.py          # Config table for app settings
-│   └── operations/            # Database CRUD operations
-│       ├── spot_prices.py     # Operations for spot prices (insert/update/query)
-│       ├── daily_stats.py     # Operations for stats (calculate/update/retrieve)
-│       └── update_db.py       # Database update operations
+│   ├── __init__.py
+│   ├── database.py            # Database connection and session management
+│   ├── models/                # SQLAlchemy ORM models
+│   │   ├── __init__.py
+│   │   ├── base.py            # Base model class
+│   │   ├── spot_price.py      # SpotPrice table definition
+│   │   ├── daily_stat.py      # DailyStats table for aggregated data
+│   │   └── config.py          # Configuration storage in database
+│   └── operations/            # Database operations
+│       ├── __init__.py
+│       ├── spot_prices.py     # CRUD for spot prices
+│       ├── daily_stats.py     # Calculate and retrieve statistics
+│       └── config_ops.py      # Operations for app configuration
 │
 ├── api/                       # API clients
-│   ├── models.py             # API model definitions
+│   ├── __init__.py
+│   ├── base_client.py         # Abstract base client class
+│   ├── models.py              # Pydantic models for API responses
 │   ├── awattar/
-│   │   └── client.py         # Awattar API client (fetch spot prices)
+│   │   ├── __init__.py
+│   │   └── client.py          # aWATTar API implementation
 │   └── smartenergy/
-│       └── client.py         # SmartEnergy API client (fetch spot prices)
+│       ├── __init__.py
+│       └── client.py          # Smartenergy API implementation
 │
-├── electricity/                # fastAPI code for serving WP Plugin access
+├── electricity/api/v1         # FastAPI application
+│   ├── __init__.py
+│   ├── endpoints/             # API route definitions
+│   └── models.py        # FastAPI dependencies
+│   └── router.py        # FastAPI dependencies
 │
-├── utils/                     # Helper functions
-│   ├── visualizer.py         # Data visualization (ASCII charts, exports)
-│   └── datetime_helper.py    # DateTime conversion and handling
+├── strom-tarif-plugin/        # WordPress plugin
+│   ├── strom-tarif.php        # Main plugin file
+│   ├── assets/                # CSS, JS, and images
+│   │   ├── css/
+│   │   └── js/
+│   ├── includes/              # PHP classes and functions
+│   └── templates/             # Template files for the plugin
 │
-├── description/               # description of the project
+├── utils/                     # Utility functions
+│   ├── __init__.py
+│   ├── chart.py               # Chart generation utilities
+│   ├── datetime_helper.py     # Date and time handling
+│   └── logging.py             # Logging configuration
 │
-├── main.py                   # Main application entry point
+├── description/               # Project documentation
+│   ├── architecture.md        # System architecture overview
+│   ├── api_docs.md            # API documentation
+│   └── folderstructure.txt    # This file
 │
-└── tests/                      # Test files testing the functions
-    ├── test_chart.py
-    ├── test_gaps.py
-    ├── test_today.py
-    ├── test_database.py
-    └── test_daily_stats.py
+├── scripts/                   # Utility scripts
+│   ├── update_prices.py       # Script to fetch and update prices
+│   └── generate_stats.py      # Script to generate statistics
+│
+├── main.py                    # Main application entry point
+│
+├── requirements.txt           # Python dependencies
+│
+└── tests/                     # Test suite
