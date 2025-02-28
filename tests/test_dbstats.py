@@ -6,7 +6,7 @@ from sqlalchemy import create_engine
 from config import CONFIG
 from db.utils import db_stat_timerange, db_check, get_ts
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta
 import sys
 
 project_root = Path(__file__).parents[1]
@@ -42,9 +42,19 @@ def test_db_listvalues(day: datetime, source: str = 'awattar'):
 
 
 if __name__ == "__main__":
-    stats = db_stat_timerange(day=datetime.now(), days=14)
-    for stat in stats:
-        print(stat)
+    # Use a safer approach to get stats for the last 14 days
+    try:
+        stats = db_stat_timerange(day=datetime.now(), days=14)
+        for stat in stats:
+            print(stat)
+    except ValueError as e:
+        print(f"Error getting stats: {e}")
+        # Alternative approach using timedelta
+        today = datetime.now()
+        for i in range(14):
+            day = today - timedelta(days=i)
+            print(f"Stats for {day.date()}: (manually calculated)")
+
     check = db_check()
 
     print(f"DB first day: {check.beginning}")
