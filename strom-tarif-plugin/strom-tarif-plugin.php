@@ -126,7 +126,7 @@ class Strom_Tarif_Plugin {
 
         // Retrieve the base URL from developer settings:
         $base_url = get_option('strom_tarif_api_url', 'https://amd1.mooo.com/api'); 
-    // Then construct the full URL:
+        // Then construct the full URL:
         $api_url = $base_url . '/electricity/tarifliste?rows=' . intval($rows) . '&contentformat=json';
         $data = $this->fetch_api_data($api_url);
         set_transient($cache_key, $data, $this->cache_time);
@@ -138,8 +138,19 @@ class Strom_Tarif_Plugin {
             return '<div class="error-message">' . esc_html($data['error']) . '</div>';
         }
 
+        // Handle both old and new API response formats
+        $tariffs = isset($data['tariffs']) ? $data['tariffs'] : $data;
+        $metadata = isset($data['metadata']) ? $data['metadata'] : null;
+
         $output = '<div class="strom-tariffs">';
         $output .= '<h2>Strom Tarife</h2>';
+        
+        // Display report date if available
+        if ($metadata && isset($metadata['report_date'])) {
+            $date = date_i18n(get_option('date_format'), strtotime($metadata['report_date']));
+            $output .= '<p class="tariff-date">Stand: ' . esc_html($date) . '</p>';
+        }
+        
         $output .= '<table class="tariff-table">';
         $output .= '<thead><tr>';
         
@@ -164,7 +175,7 @@ class Strom_Tarif_Plugin {
         
         $output .= '</tr></thead><tbody>';
 
-       foreach ($data as $tariff) {
+       foreach ($tariffs as $tariff) {
             if (empty($selected_provider) || $tariff['stromanbieter'] === $selected_provider) {
               $output .= '<tr>';
             
@@ -193,16 +204,26 @@ class Strom_Tarif_Plugin {
     }
     
     private function render_cards_layout($data, $selected_provider = '', $shortcode_provider = '') {
-            if (isset($data['error'])) {
-                return '<div class="error-message">' . esc_html($data['error']) . '</div>';
-            }
-    
-         $output = '<div class="strom-tariffs">';
+        if (isset($data['error'])) {
+            return '<div class="error-message">' . esc_html($data['error']) . '</div>';
+        }
+
+        // Handle both old and new API response formats
+        $tariffs = isset($data['tariffs']) ? $data['tariffs'] : $data;
+        $metadata = isset($data['metadata']) ? $data['metadata'] : null;
+
+        $output = '<div class="strom-tariffs">';
         $output .= '<h2>Strom Tariffs</h2>';
+        
+        // Display report date if available
+        if ($metadata && isset($metadata['report_date'])) {
+            $date = date_i18n(get_option('date_format'), strtotime($metadata['report_date']));
+            $output .= '<p class="tariff-date">Stand: ' . esc_html($date) . '</p>';
+        }
+        
         $output .= '<div class="tariff-cards">';
 
-
-        foreach ($data as $tariff) {
+        foreach ($tariffs as $tariff) {
             $provider_match = empty($shortcode_provider) ? (empty($selected_provider) || $tariff['stromanbieter'] === $selected_provider) : ($tariff['stromanbieter'] === $shortcode_provider);
             if ($provider_match) {
                 $output .= '<div class="tariff-card">';
