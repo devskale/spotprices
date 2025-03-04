@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from db.models.spot_prices import SpotPrice
 from config import CONFIG
 import math
+from db.maintenance import update_db
 
 
 def gen_chart_svg(startday, endday, output_file='price_chart.svg', minmaxdot=False):
@@ -176,6 +177,11 @@ def gen_chart_svg(startday, endday, output_file='price_chart.svg', minmaxdot=Fal
 
 
 if __name__ == "__main__":
+    # Update the database first
+    # Update the database first
+    print("Updating database...")
+    total_added = update_db()
+    print(f"Database update complete. Added {total_added} new prices.")
 
     # delete all svg and png files in the data/charts directory
     chart_dir = Path(__file__).resolve().parents[0] / "data" / "charts"
