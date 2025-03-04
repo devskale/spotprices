@@ -63,8 +63,7 @@ docs/_build/
 # Specific project related files or folders
 # Add any other project-specific files or folders below, for example:
 # my_custom_folder/
-# config.ini
+passwords.json
 .aider*
-config.py
 **/price_chart.png
 archive/
