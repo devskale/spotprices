@@ -3,7 +3,7 @@
  * Plugin Name: Strom Tarif Plugin
  * Plugin URI: https://skale.dev/plugins/strom-tarif-plugin
  * Description: Displays electricity tariff information from API.
- * Version:     1.0.4
+ * Version:     1.0.5
  * Author:      dev@skale.dev
  * License:     GPL v2 or later
  * Text Domain: strom-tarif
