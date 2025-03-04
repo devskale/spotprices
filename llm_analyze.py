@@ -1,6 +1,6 @@
 import requests
 import json
-from config import LLM_CONFIG, QUERY_CONFIG
+from config import LLM_CONFIG, QUERY_CONFIG, PASSWORDS
 import os
 import time
 
@@ -35,7 +35,11 @@ def llm_analyze(llm_model_name, query_name, context=None):
         query = f"{query}\n\n{context}"
 
     base_url = llm_config[0].get("BASEURL")
-    api_key = llm_config[0].get("APIKEY")
+    api_key_handle = llm_config[0].get("APIKEY")
+    api_key = PASSWORDS.get(api_key_handle)
+    if not api_key:
+        print(f"Error: No API key found for {api_key_handle}")
+        return None
     model = llm_config[0].get("MODEL")
 
     headers = {
