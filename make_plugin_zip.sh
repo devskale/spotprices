@@ -3,20 +3,42 @@
 # Base directory
 PLUGIN_DIR="./strom-tarif-plugin"
 BASE_NAME="strom-tarif-plugin"
+PHP_FILE="${PLUGIN_DIR}/strom-tarif-plugin.php"
 
-# Find the latest version number
-LATEST_VERSION=$(ls ${BASE_NAME}_v*.zip 2>/dev/null | grep -o "v[0-9]\+\.[0-9]\+" | sort -V | tail -n1)
+# Get current version from PHP file
+CURRENT_VERSION=$(grep "Version:" "$PHP_FILE" | grep -o "[0-9]\+\.[0-9]\+\.[0-9]\+")
+echo "Current version: $CURRENT_VERSION"
 
-if [ -z "$LATEST_VERSION" ]; then
-    NEW_VERSION="v1.0"
-else
-    MAJOR=$(echo $LATEST_VERSION | cut -d. -f1 | tr -d 'v')
-    MINOR=$(echo $LATEST_VERSION | cut -d. -f2)
+# Split version into components
+IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
+
+# Increment version
+if [ "$PATCH" -eq 9 ]; then
+    PATCH=0
     MINOR=$((MINOR + 1))
-    NEW_VERSION="v${MAJOR}.${MINOR}"
+else
+    PATCH=$((PATCH + 1))
 fi
 
-# Create zip file
-zip -r "${BASE_NAME}_${NEW_VERSION}.zip" "$PLUGIN_DIR" -x "*.DS_Store" -x "*.git*"
+NEW_VERSION="${MAJOR}.${MINOR}.${PATCH}"
+echo "New version: $NEW_VERSION"
 
-echo "Created ${BASE_NAME}_${NEW_VERSION}.zip"
+# Create a temporary file with the updated version
+awk -v new_ver="$NEW_VERSION" '{
+    if ($0 ~ /\* Version:/) {
+        gsub(/[0-9]+\.[0-9]+\.[0-9]+/, new_ver);
+    }
+    print;
+}' "$PHP_FILE" > "${PHP_FILE}.tmp"
+
+# Replace the original file with the updated one
+mv "${PHP_FILE}.tmp" "$PHP_FILE"
+
+# Verify the update
+UPDATED_VERSION=$(grep "Version:" "$PHP_FILE" | grep -o "[0-9]\+\.[0-9]\+\.[0-9]\+")
+echo "Updated version in file: $UPDATED_VERSION"
+
+# Create zip file
+zip -r "${BASE_NAME}_v${NEW_VERSION}.zip" "$PLUGIN_DIR" -x "*.DS_Store" -x "*.git*"
+
+echo "Created ${BASE_NAME}_v${NEW_VERSION}.zip"
