@@ -16,7 +16,8 @@ PRODUCT_CONFIG = {'Produktueberblick': [
 CRAWL_CONFIG = {
     'w3m': [{"PREFIX": "https://amd1.mooo.com/api/w3m?url=", "Bearer": "test23", "Format": "txt"}],
     'lynx': [{"PREFIX": "https://amd1.mooo.com/api/lynx?url=", "Bearer": "test23", "Format": "txt"}],
-    'markdowner': [{"PREFIX": "https://md.dhr.wtf/?url=", "Bearer": "", "format": "md"}], }
+    'markdowner': [{"PREFIX": "https://md.dhr.wtf/?url=", "Bearer": "", "format": "md"}],
+    'jina': [{"PREFIX": "https://r.jina.ai/", "Bearer": "jina_2748db5e063f4af18b1376101dcf9db9w_3LGAKd5aTxsXqjUDuJNYmrB_Qy", "Format": "md"}], }
 
 # Load API keys from passwords.json
 try:
@@ -31,18 +32,14 @@ except json.JSONDecodeError:
 
 
 LLM_CONFIG = {
-    'amp1_qwen': [{"BASEURL": "https://amp1.mooo.com:11444/", "APIKEY": "amp1_api_key", "MODEL": "qwen2.5:0.5b", }],
-    'amp1_deepseek': [{"BASEURL": "https://amp1.mooo.com:11444/", "APIKEY": "amp1_api_key", "MODEL": "deepseek-r1:1.5b"}],
-    'amp1_gemma': [{"BASEURL": "https://amp1.mooo.com:11444/", "APIKEY": "amp1_api_key", "MODEL": "gemma2:2b"}],
-    'groq_llama': [{"BASEURL": "https://api.groq.com/openai/v1", "APIKEY": "groq_api_key", "MODEL": "llama-3.3-70b-versatile"}],
-    'groq_r1': [{"BASEURL": "https://api.groq.com/openai/v1", "APIKEY": "groq_api_key", "MODEL": "deepseek-r1-distill-llama-70b"}],
-    'openrouter_llama': [{"BASEURL": "https://openrouter.ai/api/v1", "APIKEY": "openrouter_api_key", "MODEL": "meta-llama/llama-3.1-70b-instruct:free"}],
-    'openrouter_llama_light': [{"BASEURL": "https://openrouter.ai/api/v1", "APIKEY": "openrouter_api_key", "MODEL": "meta-llama/llama-3.2-3b-instruct:free"}],
-    'openrouter_gemini': [{"BASEURL": "https://openrouter.ai/api/v1", "APIKEY": "openrouter_api_key", "MODEL": "google/gemini-2.0-flash-exp:free"}],
-    'openrouter_phi': [{"BASEURL": "https://openrouter.ai/api/v1", "APIKEY": "openrouter_api_key", "MODEL": "microsoft/phi-3-medium-128k-instruct:free"}],
-    'mistral_large': [{"BASEURL": "https://api.mistral.ai/v1", "APIKEY": "mistral_api_key", "MODEL": "mistral-large-latest"}],
-    'arli_nemo': [{"BASEURL": "https://api.arliai.com/v1", "APIKEY": "arli_api_key", "MODEL": "Mistral-Nemo-12B-Instruct-2407"}],
+    'big@glm': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "bigmodel@glm-4.5-flash", }],
+    'groq@kimi': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "groq@moonshotai/kimi-k2-instruct", }],
+    'arli@gemma': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "arli@Gemma-3-27B-it", }],
+    'tu@qwen': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "tu@qwen-coder-30b", }],
+    'tu@mistral': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "tu@mistral-small-3.2-24b", }],
+    'chutes@glm-air': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "chutes@zai-org/GLM-4.5-Air", }],
 }
+
 
 QUERY_CONFIG = {
     'BEZUGSPREIS_ABFRAGE':
@@ -55,22 +52,35 @@ Analysiere den Webseiteninhalt, extrahiere die relevanten Informationen im Origi
 Der Webseitentext startet ab hier: """, }],
     'TARIFLISTE_ABFRAGE':
     [{"QUERY":
-      """ 
+      """
                   Extrahiere aus dem Webseitentext eines österreichischen Stromanbieters die im Context beschriebenen Stromtarife als Liste mit folgendem Schema: Schema eines Stromtarifs:
-Stromanbietername (zB Wien Energie) / Tarifname (zB Strom Fix 20) 
-Tarifart: (Einspeisung oder Bezug) 
+Stromanbietername (zB Wien Energie) / Tarifname (zB Strom Fix 20)
+Tarifart: (Einspeisung oder Bezug)
 Strompreis: (in ct/kWh netto exkl. MWSt)
 Kurzbeschreibung: (Tarifinfos, Preisanpassung Intervall, Vertragsbindung, bei variablen Tarifen nenne den Referenztarif wie zB EPEXAT, ÖSPI, E-Control etc.)
 
 Hinweise zum Strompreis: Dieser wird auch Marktpreis, Arbeitspreis oder Verbrauchspreis genannt. Bei stundenvariablen Tarifen gib anstelle eines Preises die Formel an wie der Tarif berechnet wird zB EPEXAT + Aufschlag.
-Bei dem Stromanbieter OEMAG heisst der Einspeisetarif Marktpreis, nenne hier den letztgenannten Preis inkl. Monatsangabe. Beim Anbieter WienEnergie ist ein Verbrauchspreis in cent/kWh angegeben. Antworte nur mit der Liste der Tarife in dem Schema. Keine weiteren Informationen oder Erklärungen. Keine Webseiten-Elemente wie Navigation, Footer, Werbung, Gutscheine, Rabatte etc. Context Start: """, }], 'TARIF_TABELLE': [{"QUERY": """ Bringe alle Stromtarife in eine einheitliche Form. Jeder Anbieter hat einen oder mehrere Tarife, Vereinheitliche das Format und Bringe in Tabellenform im markdown Format:
-       | Stromanbieter | Tarifname | Tarifart | Preisanpassung | Strompreis | Kurzbeschreibung |
+Bei dem Stromanbieter OEMAG heisst der Einspeisetarif Marktpreis, nenne hier den letztgenannten Preis inkl. Monatsangabe. Beim Anbieter WienEnergie ist ein Verbrauchspreis in cent/kWh angegeben. Antworte nur mit der Liste der Tarife in dem Schema. Keine weiteren Informationen oder Erklärungen. Keine Webseiten-Elemente wie Navigation, Footer, Werbung, Gutscheine, Rabatte etc. Context Start: """, }],
 
-       Antworte nur mit der Tabelle. Keine weiteren Informationen oder Erklärungen. Keine Webseiten-Elemente wie Navigation, Footer, Werbung, Gutscheine, Rabatte etc.
+'TARIF_TABELLE': [{"QUERY": """Extrahiere alle Stromtarife aus dem bereitgestellten Context und bringe sie in eine einheitliche Markdown-Tabelle. Verwende exakt dieses Format und diese Spaltenüberschrift:
 
-       Context Start:
+| Stromanbieter | Tarifname | Tarifart | Preisanpassung | Strompreis | Kurzbeschreibung |
+|:--------------|:----------|:---------|:---------------|:-----------|:----------------|
 
-       """, }],
+- **Stromanbieter**: Der Name des Energieanbieters (z.B. Wien Energie).
+- **Tarifname**: Der spezifische Name des Tarifs (z.B. OPTIMA Entspannt).
+- **Tarifart**: "Bezug" für Strombezug, "Einspeisung" für Einspeisung, oder "Bezug mit Einspeisevergütung" falls beides.
+- **Preisanpassung**: Der Anpassungszeitraum des Preises (z.B. "Stündlich", "Monatlich", "Fixpreis", "Nicht explizit" falls unbekannt).
+- **Strompreis**: Der Preis in ct/kWh netto exkl. MWSt. Bei dynamischen Tarifen gib die Formel an (z.B. "EPEX Spot AT + 1,44 ct/kWh"). Falls kein Preis angegeben, schreibe "Nicht explizit genannt".
+- **Kurzbeschreibung**: Eine kurze Zusammenfassung des Tarifs, inkl. Vertragsbindung, Rabatte, Preisgarantie und Aktualität (z.B. "Fixpreis – 1 Jahr, Preisgarantie ab Abschluss: 12 Monate").
+
+Liste jeden Tarif in einer separaten Zeile. Stelle sicher, dass die Tabelle vollständig ist und alle relevanten Tarife aus dem Context erfasst. Antworte NUR mit der Markdown-Tabelle. Keine zusätzlichen Texte, Erklärungen oder Webseiten-Elemente.
+
+Context Start:
+
+"""
+
+, }],
     'SOLIDIFY_REPORT':
     [{"QUERY":
       """
@@ -83,6 +93,6 @@ Stromanbieter
 
    Context Start:
 
-       """, }],
+""", }],
 
 }

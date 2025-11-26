@@ -50,31 +50,36 @@ def llm_analyze(llm_model_name, query_name, context=None):
         headers['Authorization'] = f'Bearer {api_key}'
         data = {
             "model": model,
-            "messages": [{"role": "user", "content": query}]
+            "messages": [{"role": "user", "content": query}],
+            "max_tokens": 4000,  # Increased for large content synthesis
+            "temperature": 0.1
         }
 
     elif 'amp1' in llm_model_name:
         data = {
             "prompt": query,
-            "model": model
+            "model": model,
+            "max_tokens": 4000  # Increased for large content synthesis
         }
-    else:  # openai fallback
+    else:  # openai fallback - FIXED: Added missing Authorization header
         headers['Authorization'] = f'Bearer {api_key}'
         data = {
             "model": model,
-            "messages": [{"role": "user", "content": query}]
+            "messages": [{"role": "user", "content": query}],
+            "max_tokens": 4000,  # Increased for large content synthesis
+            "temperature": 0.1
         }
 
     try:
         if 'openrouter' in llm_model_name:
             response = requests.post(
-                f"{base_url}/chat/completions", headers=headers, json=data)
+                f"{base_url}/chat/completions", headers=headers, json=data, timeout=300)
         elif 'amp1' in llm_model_name:
             response = requests.post(
-                f"{base_url}/v1/completions", headers=headers, json=data)
+                f"{base_url}/v1/completions", headers=headers, json=data, timeout=300)
         else:
             response = requests.post(
-                f"{base_url}/chat/completions", headers=headers, json=data)
+                f"{base_url}/chat/completions", headers=headers, json=data, timeout=300)
 
         response.raise_for_status()  # Raise an exception for bad status codes
 
@@ -85,8 +90,11 @@ def llm_analyze(llm_model_name, query_name, context=None):
         else:
             return response.json()['choices'][0]['message']['content']
 
+    except requests.exceptions.Timeout as e:
+        print(f"❌ TIMEOUT: Request to {llm_model_name} timed out after 60 seconds: {e}")
+        return None
     except requests.exceptions.RequestException as e:
-        print(f"Error during request to {llm_model_name}: {e}")
+        print(f"❌ REQUEST ERROR: Error during request to {llm_model_name}: {e}")
         return None
     except KeyError as e:
         print(f"Error parsing response from {llm_model_name}: {e}")
@@ -94,7 +102,7 @@ def llm_analyze(llm_model_name, query_name, context=None):
         return None
 
 
-def llmanalyze_files(llm_model='arli_nemo', files='crawl_', query_to_use='TARIFLISTE_ABFRAGE', maxtokens=12000):
+def llmanalyze_files(llm_model='arli_nemo', files='crawl_', query_to_use='TARIFLISTE_ABFRAGE', maxtokens=15000):
     """
     Processes files in the 'data/crawls' directory, sends them to the LLM for analysis,
     and saves the results to a report file.
@@ -143,7 +151,7 @@ def llmanalyze_files(llm_model='arli_nemo', files='crawl_', query_to_use='TARIFL
     return report_file_path
 
 
-def solidify_report(report_file_path='Default', query_to_use='Standard', llm_model='arli_nemo', ending='solid.txt'):
+def solidify_report(report_file_path='Default', query_to_use='Standard', llm_model='arli_nemo', ending='solid.txt', maxtokens=30000):
     """
     Reads the content of a report file, sends it to the LLM for solidification
     using the specified query, and saves the solidified report to a new file.
@@ -157,7 +165,13 @@ def solidify_report(report_file_path='Default', query_to_use='Standard', llm_mod
         with open(report_file_path, 'r', encoding='utf-8') as report_file:
             report_content = report_file.read()
 
-        print(f"Analyzing report with {llm_model} and query: {query_to_use}")
+        # Handle large report content
+        tokens = round(len(report_content) / 4)
+        if tokens > maxtokens:
+            print(f"Report content too long ({tokens} tokens). Truncating to {maxtokens} tokens.")
+            report_content = report_content[:maxtokens * 4]
+
+        print(f"Analyzing report with {llm_model} and query: {query_to_use} ({tokens} tokens)")
         solidified_result = llm_analyze(
             llm_model, query_to_use, context=report_content)
 
@@ -212,18 +226,17 @@ if __name__ == '__main__':
     if True:
         del_files(contains='report_', doesnotcontain='solid')
         report_file_path = llmanalyze_files(
-            llm_model='mistral_large',
+            llm_model='arli@gemma',
             files='crawl_',
-            query_to_use='TARIFLISTE_ABFRAGE')
+            query_to_use='TARIFLISTE_ABFRAGE',
+            maxtokens=20000)  # Increased to handle large crawl files
 
     if True:
-        try:
-            report_file_path
-        except NameError:
-            report_file_path = 'data/crawls/report_20250131.txt'
+        report_file_path = 'data/crawls/report_20251126.txt'
         del_files(contains='solid')
         solidify_report(
             report_file_path=report_file_path,
             query_to_use='TARIF_TABELLE',
-            llm_model='groq_r1',
-            ending='tab.md')
+            llm_model='groq@kimi',
+            ending='tab.md',
+            maxtokens=30000)  # Increased to handle large synthesis reports

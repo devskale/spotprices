@@ -9,6 +9,7 @@ from pathlib import Path
 import time
 import urllib.parse
 import re
+import argparse
 
 
 def fetch_and_convert_csv_to_dict():
@@ -65,7 +66,7 @@ def print_data_beautifully(data):
                 print("----")
 
 
-def crawl_data(data, default_crawler='w3m', n=1, fetchinterval=20, verbose=True, savetofile=True):
+def crawl_data(data, default_crawler='w3m', n=1, fetchinterval=20, verbose=True, savetofile=True, anbieter=None):
     """Fetches and saves crawl data for the first n crawlable entries using specified crawler,
     checking file modification time for the fetch interval."""
     crawl_dir = Path("data/crawls")
@@ -78,6 +79,9 @@ def crawl_data(data, default_crawler='w3m', n=1, fetchinterval=20, verbose=True,
         for entry in rows:
             if n > 0 and crawled_count >= n:
                 break
+
+            if anbieter and entry.get("Anbieter", "").lower() != anbieter.lower():
+                continue
 
             if entry.get('crawl', False) == True or entry.get('crawl', False) == 'y':
 
@@ -154,8 +158,11 @@ def crawl_data(data, default_crawler='w3m', n=1, fetchinterval=20, verbose=True,
                                       wait_seconds:.2f} seconds before next crawl...")
                                 time.sleep(wait_seconds)
 
-                        encoded_url = urllib.parse.quote_plus(url)
-                        crawl_url = f"{crawler_prefix}{encoded_url}"
+                        if crawler == 'jina':
+                            crawl_url = f"{crawler_prefix}{url}"
+                        else:
+                            encoded_url = urllib.parse.quote_plus(url)
+                            crawl_url = f"{crawler_prefix}{encoded_url}"
                         headers = {}
                         if crawler_bearer:
                             headers['Authorization'] = f'Bearer {
@@ -241,9 +248,14 @@ def cleanup(n=1):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Crawl tariff data for energy providers.")
+    parser.add_argument('--anbieter', type=str, help="Filter by specific provider (Anbieter)")
+    parser.add_argument('--crawler', type=str, default='w3m', help="Specify the crawler tool (default: w3m)")
+    args = parser.parse_args()
+
     data = fetch_and_convert_csv_to_dict()
     # print(data)
     # print_data_beautifully(data)
-    crawl_data(data=data, default_crawler='w3m', n=0,
-               fetchinterval=20, verbose=True, savetofile=True)
+    crawl_data(data=data, default_crawler=args.crawler, n=0,
+               fetchinterval=20, verbose=True, savetofile=True, anbieter=args.anbieter)
     cleanup(n=1)
