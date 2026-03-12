@@ -1,7 +1,7 @@
 import csv
 import requests
 from io import StringIO
-from config import TARIF_CONFIG, CRAWL_CONFIG
+from config import CRAWL_CONFIG, TARIF_CONFIG, get_secret
 import json
 import os
 from datetime import datetime, timedelta
@@ -92,6 +92,9 @@ def crawl_data(data, default_crawler='w3m', n=1, fetchinterval=20, verbose=True,
 
                 crawler_prefix = crawler_config[0].get('PREFIX', '')
                 crawler_bearer = crawler_config[0].get('Bearer', '')
+                bearer_key = crawler_config[0].get("BearerKey", "")
+                if bearer_key and not crawler_bearer:
+                    crawler_bearer = get_secret(bearer_key, "")
 
                 url = entry.get("Link")
                 energieanbieter = entry.get("Anbieter", "unknown")
@@ -149,8 +152,7 @@ def crawl_data(data, default_crawler='w3m', n=1, fetchinterval=20, verbose=True,
                                 crawl_url = f"{crawler_prefix}{encoded_url}"
                             headers = {}
                             if crawler_bearer:
-                                headers['Authorization'] = f'Bearer {
-                                crawler_bearer}'
+                                headers["Authorization"] = f"Bearer {crawler_bearer}"
 
                             response = requests.get(crawl_url, headers=headers)
                             response.raise_for_status()

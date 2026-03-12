@@ -1,6 +1,7 @@
 # config.py
 from pathlib import Path
 import json
+import os
 
 CONFIG = {
     'db_file': 'spotprices.db',
@@ -14,10 +15,10 @@ PRODUCT_CONFIG = {'Produktueberblick': [
     {"url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ0WJfm_6j_0Sg4E7iW6lJys8bt_X2kneqXIsuKUDFDLObds11UbRDbgadO6nzIfm5yiy-QBbPEduLj/pub?gid=1310884312&single=true&output=csv"}]}
 
 CRAWL_CONFIG = {
-    'w3m': [{"PREFIX": "https://amd1.mooo.com/api/fetch_url?tool=w3m&url=", "Bearer": "test23", "Format": "json"}],
-    'lynx': [{"PREFIX": "https://amd1.mooo.com/api/fetch_url?tool=lynx&url=", "Bearer": "test23", "Format": "json"}],
+    'w3m': [{"PREFIX": "https://amd1.mooo.com/api/fetch_url?tool=w3m&url=", "Bearer": "", "BearerKey": "amd1_fetch_bearer", "Format": "json"}],
+    'lynx': [{"PREFIX": "https://amd1.mooo.com/api/fetch_url?tool=lynx&url=", "Bearer": "", "BearerKey": "amd1_fetch_bearer", "Format": "json"}],
     'markdowner': [{"PREFIX": "https://md.dhr.wtf/?url=", "Bearer": "", "format": "md"}],
-    'jina': [{"PREFIX": "https://r.jina.ai/", "Bearer": "jina_2748db5e063f4af18b1376101dcf9db9w_3LGAKd5aTxsXqjUDuJNYmrB_Qy", "Format": "md"}],
+    'jina': [{"PREFIX": "https://r.jina.ai/", "Bearer": "", "BearerKey": "jina_bearer", "Format": "md"}],
     'chawan': [{"CMD": "/Users/johannwaldherr/.pi/agent/skills/fetch-url/fetch-url", "ARGS": "--tool chawan", "Format": "txt"}], }
 
 # Load API keys from passwords.json
@@ -30,6 +31,13 @@ except FileNotFoundError:
 except json.JSONDecodeError:
     PASSWORDS = {}
     print("Warning: passwords.json is not valid JSON. API keys will be missing.")
+
+
+def get_secret(name: str, default: str = "") -> str:
+    value = os.getenv(name.upper())
+    if value:
+        return value
+    return str(PASSWORDS.get(name, default) or default)
 
 
 LLM_CONFIG = {
