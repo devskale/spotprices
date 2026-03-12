@@ -45,10 +45,7 @@ LLM_CONFIG = {
     'tu@mistral': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "tu@mistral-small-3.2-24b", }],
     'tu@qwen': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "tu@qwen-coder-30b", }],
     'tu@glm': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "tu@glm-4.7-355b", }],
-    'big@glm': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "bigmodel@glm-4.5-flash", }],
     'groq@kimi': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "groq@moonshotai/kimi-k2-instruct", }],
-    'arli@gemma': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "arli@Gemma-3-27B-it", }],
-    'chutes@glm-air': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "chutes@zai-org/GLM-4.5-Air", }],
     'mistral@medium': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "mistral@mistral-medium-latest", }],
 }
 
@@ -72,6 +69,13 @@ Strompreis: (in ct/kWh netto exkl. MWSt)
 Kurzbeschreibung: (Tarifinfos, Preisanpassung Intervall, Vertragsbindung, bei variablen Tarifen nenne den Referenztarif wie zB EPEXAT, ÖSPI, E-Control etc.)
 
 Hinweise zum Strompreis: Dieser wird auch Marktpreis, Arbeitspreis oder Verbrauchspreis genannt. Bei stundenvariablen Tarifen gib anstelle eines Preises die Formel an wie der Tarif berechnet wird zB EPEXAT + Aufschlag.
+Regeln:
+- Preise immer netto exkl. MWSt ausgeben. Wenn brutto und netto vorhanden sind: verwende netto. Wenn nur brutto vorhanden ist: gib den brutto-Wert aus und kennzeichne ihn explizit als "brutto" (und erwähne "netto nicht angegeben" in der Kurzbeschreibung).
+- Wenn ein Tarif mehrere Arbeitspreise je nach Bedingung hat (z.B. Smart-Meter-Rabatt, Neukunde/Bestandskunde, Verbrauchs-/Leistungsstufe): führe die Varianten entweder als separate Tarife (Tarifname mit Klammerzusatz) oder liste im Feld Strompreis beide Werte mit Bedingung (z.B. "14,55 ct/kWh netto (Standard); 12,55 ct/kWh netto (Smart Meter)").
+- Liste nur Tarife mit explizitem Strompreis oder expliziter Formel/Index-Referenz (z.B. "EPEX Spot AT + ...", "ÖSPI ..."). Wenn kein Preis/Formel vorhanden ist, lasse den Tarif weg.
+- Keine Schätzungen oder erfundene Werte: gib nur Werte/Formeln aus, die im Context stehen. Qualifizierer wie "ca.", "rd." aus dem Context dürfen übernommen werden, aber nicht hinzufügen.
+- Antworte ohne Einleitung und ohne zusätzliche Sätze: beginne direkt mit dem ersten Tarif im Schema.
+
 Bei dem Stromanbieter OEMAG heisst der Einspeisetarif Marktpreis, nenne hier den letztgenannten Preis inkl. Monatsangabe. Beim Anbieter WienEnergie ist ein Verbrauchspreis in cent/kWh angegeben. Antworte nur mit der Liste der Tarife in dem Schema. Keine weiteren Informationen oder Erklärungen. Keine Webseiten-Elemente wie Navigation, Footer, Werbung, Gutscheine, Rabatte etc. Context Start: """, }],
 
 'TARIF_TABELLE': [{"QUERY": """Extrahiere alle Stromtarife aus dem bereitgestellten Context und bringe sie in eine einheitliche Markdown-Tabelle. Verwende exakt dieses Format und diese Spaltenüberschrift:
@@ -83,10 +87,11 @@ Bei dem Stromanbieter OEMAG heisst der Einspeisetarif Marktpreis, nenne hier den
 - **Tarifname**: Der spezifische Name des Tarifs (z.B. OPTIMA Entspannt).
 - **Tarifart**: "Bezug" für Strombezug, "Einspeisung" für Einspeisung, oder "Bezug mit Einspeisevergütung" falls beides.
 - **Preisanpassung**: Der Anpassungszeitraum des Preises (z.B. "Stündlich", "Monatlich", "Fixpreis", "Nicht explizit" falls unbekannt).
-- **Strompreis**: Der Preis in ct/kWh netto exkl. MWSt. Bei dynamischen Tarifen gib die Formel an (z.B. "EPEX Spot AT + 1,44 ct/kWh"). Falls kein Preis angegeben, schreibe "Nicht explizit genannt".
+- **Strompreis**: Der Preis in ct/kWh netto exkl. MWSt. Wenn brutto und netto vorhanden sind: verwende netto. Wenn nur brutto vorhanden ist: gib den brutto-Wert aus und kennzeichne ihn als "brutto". Bei dynamischen Tarifen gib die Formel an (z.B. "EPEX Spot AT + 1,44 ct/kWh"). Wenn mehrere Arbeitspreise je nach Bedingung gelten, schreibe beide Werte mit Bedingung (z.B. "14,55 ct/kWh netto (Standard); 12,55 ct/kWh netto (Smart Meter)").
 - **Kurzbeschreibung**: Eine kurze Zusammenfassung des Tarifs, inkl. Vertragsbindung, Rabatte, Preisgarantie und Aktualität (z.B. "Fixpreis – 1 Jahr, Preisgarantie ab Abschluss: 12 Monate").
 
-Liste jeden Tarif in einer separaten Zeile. Stelle sicher, dass die Tabelle vollständig ist und alle relevanten Tarife aus dem Context erfasst. Antworte NUR mit der Markdown-Tabelle. Keine zusätzlichen Texte, Erklärungen oder Webseiten-Elemente.
+Liste jeden Tarif in einer separaten Zeile. Liste nur Tarife mit explizitem Strompreis oder expliziter Formel/Index-Referenz; Tarife ohne Preis/Formel weglassen. Antworte NUR mit der Markdown-Tabelle und ohne Code-Block-Markierungen (keine ```).
+Keine Schätzungen oder erfundene Werte: gib nur Werte/Formeln aus, die im Context stehen. Qualifizierer wie "ca.", "rd." aus dem Context dürfen übernommen werden, aber nicht hinzufügen.
 
 Context Start:
 
