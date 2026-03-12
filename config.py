@@ -39,8 +39,6 @@ LLM_CONFIG = {
     'big@glm': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "bigmodel@glm-4.5-flash", }],
     'groq@kimi': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "groq@moonshotai/kimi-k2-instruct", }],
     'arli@gemma': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "arli@Gemma-3-27B-it", }],
-    'tu@qwen': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "tu@qwen-coder-30b", }],
-    'tu@mistral': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "tu@mistral-small-3.2-24b", }],
     'chutes@glm-air': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "chutes@zai-org/GLM-4.5-Air", }],
     'mistral@medium': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "mistral@mistral-medium-latest", }],
 }

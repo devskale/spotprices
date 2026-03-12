@@ -1,5 +1,9 @@
 # tests/test_dbstats.py
 
+import pytest
+
+pytestmark = pytest.mark.skip(reason="Manual database inspection script, not an automated test.")
+
 from db.models.spot_prices import SpotPrice
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine

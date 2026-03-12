@@ -1,5 +1,4 @@
 import requests
-import json
 from datetime import datetime
 
 
@@ -81,7 +80,7 @@ class WordPressPosts:
 
         if response.status_code == 201:
             post_id = response.json()['id']
-            print(f"\nTest-Post erstellt:")
+            print("\nTest-Post erstellt:")
             print(f"Post ID: {post_id}")
             print(f"Titel: {title}")
             print(f"Status: {response.json()['status']}")

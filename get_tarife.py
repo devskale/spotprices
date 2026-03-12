@@ -26,14 +26,6 @@ def fetch_and_convert_csv_to_dict():
                 response = requests.get(url)
                 response.raise_for_status()
 
-                # Decode content based on Content-Type header or try utf-8 if header not found or if it does not define charset
-                if 'Content-Type' in response.headers and 'charset' in response.headers['Content-Type']:
-                    encoding = response.headers['Content-Type'].split(
-                        'charset=')[-1].strip()
-
-                else:
-                    encoding = 'utf-8'
-
                 csv_data = StringIO(response.text)
                 reader = csv.DictReader(csv_data)
                 all_data[description] = list(reader)
@@ -83,7 +75,8 @@ def crawl_data(data, default_crawler='w3m', n=1, fetchinterval=20, verbose=True,
             if anbieter and entry.get("Anbieter", "").lower() != anbieter.lower():
                 continue
 
-            if entry.get('crawl', False) == True or entry.get('crawl', False) == 'y':
+            crawl_flag = entry.get("crawl", False)
+            if crawl_flag is True or str(crawl_flag).lower() == "y":
 
                 # Use 'tool' from data or default
 

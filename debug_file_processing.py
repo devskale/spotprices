@@ -2,7 +2,6 @@
 """
 Test script to debug the specific file processing issue in llm_analyze.py
 """
-import os
 import sys
 from pathlib import Path
 
@@ -47,7 +46,7 @@ def test_with_real_file():
             print(f"✅ SUCCESS: Got response: {result[:300]}...")
             return True
         else:
-            print(f"❌ FAILURE: No response from LLM")
+            print("❌ FAILURE: No response from LLM")
             return False
             
     except Exception as e:
@@ -70,7 +69,7 @@ def test_simple_llm_call():
         print(f"✅ SUCCESS: Simple call worked: {result[:300]}...")
         return True
     else:
-        print(f"❌ FAILURE: Simple LLM call failed")
+        print("❌ FAILURE: Simple LLM call failed")
         return False
 
 def test_minimal_query():
@@ -83,7 +82,7 @@ def test_minimal_query():
         print(f"✅ SUCCESS: Minimal query worked: {result}")
         return True
     else:
-        print(f"❌ FAILURE: Minimal query failed")
+        print("❌ FAILURE: Minimal query failed")
         return False
 
 def check_file_permissions():

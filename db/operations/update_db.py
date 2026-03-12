@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from typing import List, Tuple, Optional
-from sqlalchemy import select, text
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 from ..models.spot_prices import SpotPrice
 from api.awattar.client import Client
@@ -37,6 +37,8 @@ def find_missing_dates(session: Session) -> List[datetime.date]:
     end_ts = int(datetime.combine(end_date, datetime.max.time()).timestamp())
     
     dates = [row[0] for row in session.execute(stmt, {'start_ts': start_ts, 'end_ts': end_ts})]
+    if not dates:
+        return [now.date()]
     
     date_set = set(dates)
     missing_dates = set()

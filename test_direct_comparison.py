@@ -2,8 +2,14 @@
 """
 Direct comparison test to identify the exact difference between working and failing calls
 """
+import os
 import sys
 import json
+import pytest
+
+if os.getenv("RUN_LLM_TESTS") != "1":
+    pytest.skip("Set RUN_LLM_TESTS=1 to run live LLM tests.", allow_module_level=True)
+
 sys.path.insert(0, '/Users/johannwaldherr/code/gwen.at/spotprices')
 
 from config import LLM_CONFIG, QUERY_CONFIG, PASSWORDS
@@ -88,7 +94,6 @@ def test_without_context():
     
     llm_model_name = "big@glm"
     query_name = "WIEN_ABFRAGE"
-    context = None  # No context
     
     # Get configuration
     llm_config = LLM_CONFIG.get(llm_model_name)
@@ -102,6 +107,8 @@ def test_without_context():
     model = llm_config[0].get("MODEL")
     
     headers = {"Content-Type": "application/json"}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
     data = {
         "model": model,
         "messages": [{"role": "user", "content": query}]

@@ -1,8 +1,7 @@
 # tests/check_today.py
 from pathlib import Path
 import sys
-from datetime import datetime, timedelta
-from sqlalchemy import text
+from datetime import datetime
 
 project_root = Path(__file__).parents[1]
 sys.path.append(str(project_root))

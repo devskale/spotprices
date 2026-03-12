@@ -2,8 +2,14 @@
 """
 Test to confirm timeout issue and test with longer timeouts
 """
+import os
 import sys
 import time
+import pytest
+
+if os.getenv("RUN_LLM_TESTS") != "1":
+    pytest.skip("Set RUN_LLM_TESTS=1 to run live LLM tests.", allow_module_level=True)
+
 sys.path.insert(0, '/Users/johannwaldherr/code/gwen.at/spotprices')
 
 from config import LLM_CONFIG, QUERY_CONFIG, PASSWORDS
@@ -15,7 +21,11 @@ def test_timeout_issue():
     print("=== TESTING TIMEOUT ISSUE ===")
     
     # Load a sample of the large content
-    with open('data/crawls/crawl_SmartEnergy_Bezug_20251126_153200.txt', 'r', encoding='utf-8') as f:
+    from pathlib import Path
+    crawl_files = sorted(Path("data/crawls").glob("crawl_*.txt"))
+    if not crawl_files:
+        pytest.skip("No crawl files available in data/crawls.", allow_module_level=False)
+    with open(crawl_files[0], 'r', encoding='utf-8') as f:
         content = f.read()
     
     # Use a smaller sample for testing
@@ -37,6 +47,8 @@ def test_timeout_issue():
     model = llm_config[0].get("MODEL")
     
     headers = {"Content-Type": "application/json"}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
     data = {"model": model, "messages": [{"role": "user", "content": query}]}
     endpoint = f"{base_url}/chat/completions"
     
@@ -114,6 +126,8 @@ def test_simple_quick_call():
     model = llm_config[0].get("MODEL")
     
     headers = {"Content-Type": "application/json"}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
     data = {"model": model, "messages": [{"role": "user", "content": query}]}
     endpoint = f"{base_url}/chat/completions"
     
@@ -152,7 +166,7 @@ if __name__ == "__main__":
     else:
         print("❌ Simple call failed - API might be down")
     
-    print(f"\n💡 CONCLUSION:")
-    print(f"   - If simple call works but large content fails: TIMEOUT ISSUE")
-    print(f"   - If both fail: API or network issue") 
-    print(f"   - SOLUTION: Add timeout parameter to requests.post() calls")
+    print("\n💡 CONCLUSION:")
+    print("   - If simple call works but large content fails: TIMEOUT ISSUE")
+    print("   - If both fail: API or network issue") 
+    print("   - SOLUTION: Add timeout parameter to requests.post() calls")

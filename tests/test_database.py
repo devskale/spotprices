@@ -3,7 +3,7 @@ from config import CONFIG
 from api.smartenergy.client import Client as SmartEnergyClient
 from api.awattar.client import Client as AwattarClient
 from db.operations.spot_prices import save_prices, get_day_prices
-from db.models.spot_prices import Base, SpotPrice
+from db.models.spot_prices import Base
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine
 import sys

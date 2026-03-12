@@ -1,5 +1,4 @@
 import requests
-import json
 from config import LLM_CONFIG, QUERY_CONFIG, PASSWORDS
 import os
 import time

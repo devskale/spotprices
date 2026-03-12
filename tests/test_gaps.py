@@ -1,6 +1,6 @@
 from config import CONFIG
 from api.awattar.client import Client
-from db.models.spot_prices import Base, SpotPrice
+from db.models.spot_prices import SpotPrice
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine
 from pathlib import Path

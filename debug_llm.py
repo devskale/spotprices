@@ -10,7 +10,7 @@ from config import LLM_CONFIG, QUERY_CONFIG, PASSWORDS
 def debug_llm_call(llm_model_name, query_name, context=None):
     """Debug version of llm_analyze with detailed logging"""
     
-    print(f"\n=== DEBUGGING LLM CALL ===")
+    print("\n=== DEBUGGING LLM CALL ===")
     print(f"Model: {llm_model_name}")
     print(f"Query: {query_name}")
     print(f"Has context: {context is not None}")
@@ -31,7 +31,7 @@ def debug_llm_call(llm_model_name, query_name, context=None):
         print(f"❌ ERROR: No query found for query name: {query_name}")
         return None
         
-    print(f"✅ Query config found")
+    print("✅ Query config found")
     
     query = query_config[0].get("QUERY")
     print(f"✅ Query template retrieved (length: {len(query)})")
@@ -58,7 +58,7 @@ def debug_llm_call(llm_model_name, query_name, context=None):
     print(f"✅ API key found: {api_key[:10]}...")
     
     # Test connectivity
-    print(f"\n=== TESTING CONNECTIVITY ===")
+    print("\n=== TESTING CONNECTIVITY ===")
     try:
         test_response = requests.get(base_url, timeout=5)
         print(f"✅ API endpoint reachable: {test_response.status_code}")
@@ -78,7 +78,7 @@ def debug_llm_call(llm_model_name, query_name, context=None):
             "messages": [{"role": "user", "content": query}]
         }
         endpoint = f"{base_url}/chat/completions"
-        print(f"Using OpenRouter format")
+        print("Using OpenRouter format")
         
     elif 'amp1' in llm_model_name:
         data = {
@@ -86,7 +86,7 @@ def debug_llm_call(llm_model_name, query_name, context=None):
             "model": model
         }
         endpoint = f"{base_url}/v1/completions"
-        print(f"Using Amp1 format")
+        print("Using Amp1 format")
         
     else:  # Default/other format
         headers['Authorization'] = f'Bearer {api_key}'
@@ -95,13 +95,13 @@ def debug_llm_call(llm_model_name, query_name, context=None):
             "messages": [{"role": "user", "content": query}]
         }
         endpoint = f"{base_url}/chat/completions"
-        print(f"Using default/other format")
+        print("Using default/other format")
     
     print(f"Endpoint: {endpoint}")
     print(f"Request data keys: {list(data.keys())}")
     
     # Make the request
-    print(f"\n=== MAKING REQUEST ===")
+    print("\n=== MAKING REQUEST ===")
     try:
         response = requests.post(endpoint, headers=headers, json=data, timeout=30)
         print(f"Response status: {response.status_code}")
@@ -119,30 +119,30 @@ def debug_llm_call(llm_model_name, query_name, context=None):
         if 'openrouter' in llm_model_name:
             if 'choices' in response_json and len(response_json['choices']) > 0:
                 result = response_json['choices'][0]['message']['content']
-                print(f"✅ OpenRouter response parsed successfully")
+                print("✅ OpenRouter response parsed successfully")
                 return result
             else:
-                print(f"❌ ERROR: Invalid OpenRouter response structure")
+                print("❌ ERROR: Invalid OpenRouter response structure")
                 print(f"Response: {response_json}")
                 return None
                 
         elif 'amp1' in llm_model_name:
             if 'choices' in response_json and len(response_json['choices']) > 0:
                 result = response_json['choices'][0]['text']
-                print(f"✅ Amp1 response parsed successfully")
+                print("✅ Amp1 response parsed successfully")
                 return result
             else:
-                print(f"❌ ERROR: Invalid Amp1 response structure")
+                print("❌ ERROR: Invalid Amp1 response structure")
                 print(f"Response: {response_json}")
                 return None
         else:
             # Default format
             if 'choices' in response_json and len(response_json['choices']) > 0:
                 result = response_json['choices'][0]['message']['content']
-                print(f"✅ Default response parsed successfully")
+                print("✅ Default response parsed successfully")
                 return result
             else:
-                print(f"❌ ERROR: Invalid default response structure")
+                print("❌ ERROR: Invalid default response structure")
                 print(f"Response: {response_json}")
                 return None
                 
@@ -153,7 +153,7 @@ def debug_llm_call(llm_model_name, query_name, context=None):
         print(f"❌ ERROR: KeyError parsing response: {e}")
         try:
             print(f"Raw response: {response.text}")
-        except:
+        except Exception:
             pass
         return None
     except json.JSONDecodeError as e:
@@ -174,7 +174,7 @@ def test_simple_query():
         print(f"\n✅ SUCCESS: Got response: {result[:200]}...")
         return True
     else:
-        print(f"\n❌ FAILURE: No response received")
+        print("\n❌ FAILURE: No response received")
         return False
 
 if __name__ == "__main__":
@@ -185,7 +185,7 @@ if __name__ == "__main__":
     success = test_simple_query()
     
     if not success:
-        print(f"\n🔍 ADDITIONAL DIAGNOSTICS:")
+        print("\n🔍 ADDITIONAL DIAGNOSTICS:")
         print(f"Available LLM models: {list(LLM_CONFIG.keys())}")
         print(f"Available queries: {list(QUERY_CONFIG.keys())}")
         print(f"Available API keys: {list(PASSWORDS.keys())}")

@@ -1,6 +1,6 @@
 import pandas as pd
 from sqlalchemy import text
-from typing import Optional, Dict, List, Tuple
+from typing import Optional
 from datetime import datetime, timedelta
 
 from db.database import get_db_engine

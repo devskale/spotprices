@@ -22,7 +22,7 @@ def sample_data():
     # Create a date range for the past year
     end_date = datetime.now()
     start_date = end_date - timedelta(days=365)
-    date_range = pd.date_range(start=start_date, end=end_date, freq='H')
+    date_range = pd.date_range(start=start_date, end=end_date, freq='h')
 
     # Create sample prices (using a simple pattern for predictability)
     prices = [100 + (i % 50) for i in range(len(date_range))]
@@ -108,7 +108,7 @@ def test_with_db_data():
                 analyzer = SpotPriceAnalyzer(data)
                 result = analyzer.average_price_analysis()
 
-                print(f"\nAnalysis using complete dataset:")
+                print("\nAnalysis using complete dataset:")
                 print(
                     f"All-time average price: {result['all_time_average']} EUR/MWh")
                 print(

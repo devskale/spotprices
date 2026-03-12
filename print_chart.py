@@ -1,8 +1,6 @@
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-import matplotlib.ticker as ticker
 from datetime import datetime, timedelta
-from pathlib import Path
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 from db.models.spot_prices import SpotPrice

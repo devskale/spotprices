@@ -1,3 +1,8 @@
+from sqlalchemy import Column, Float, Integer, String
+
+from .spot_prices import Base
+
+
 class DailyStats(Base):
     __tablename__ = 'daily_stats'
     

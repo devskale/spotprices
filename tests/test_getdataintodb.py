@@ -1,6 +1,6 @@
 # tests/test_gentle_fetch.py
 from pathlib import Path
-from datetime import datetime, date, timedelta
+from datetime import date, timedelta
 import sys
 import time
 project_root = Path(__file__).parents[1]
@@ -8,7 +8,6 @@ sys.path.append(str(project_root))
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
-from db.models.spot_prices import Base, SpotPrice
 from db.operations.spot_prices import save_prices
 from api.awattar.client import Client
 from config import CONFIG

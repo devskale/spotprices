@@ -1,5 +1,5 @@
 # db/models/spot_prices.py
-from sqlalchemy import create_engine, Table, Column, Integer, Float, String, MetaData, DateTime
+from sqlalchemy import Column, Integer, Float, String
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()

@@ -2,7 +2,14 @@
 """
 Test to find the exact content size threshold where LLM calls fail
 """
+import os
 import sys
+import pytest
+from pathlib import Path
+
+if os.getenv("RUN_LLM_TESTS") != "1":
+    pytest.skip("Set RUN_LLM_TESTS=1 to run live LLM tests.", allow_module_level=True)
+
 sys.path.insert(0, '/Users/johannwaldherr/code/gwen.at/spotprices')
 
 from llm_analyze import llm_analyze
@@ -13,7 +20,10 @@ def test_content_size_threshold():
     print("=== TESTING CONTENT SIZE THRESHOLD ===")
     
     # Load the real crawl file content
-    with open('data/crawls/crawl_SmartEnergy_Bezug_20251126_153200.txt', 'r', encoding='utf-8') as f:
+    crawl_files = sorted(Path("data/crawls").glob("crawl_*.txt"))
+    if not crawl_files:
+        pytest.skip("No crawl files available in data/crawls.", allow_module_level=False)
+    with open(crawl_files[0], 'r', encoding='utf-8') as f:
         full_content = f.read()
     
     print(f"Total content length: {len(full_content)} characters")
@@ -48,7 +58,10 @@ def test_with_truncated_content():
     print("\n=== TESTING WITH ORIGINAL TOKEN LIMIT ===")
     
     # Load the real crawl file content
-    with open('data/crawls/crawl_SmartEnergy_Bezug_20251126_153200.txt', 'r', encoding='utf-8') as f:
+    crawl_files = sorted(Path("data/crawls").glob("crawl_*.txt"))
+    if not crawl_files:
+        pytest.skip("No crawl files available in data/crawls.", allow_module_level=False)
+    with open(crawl_files[0], 'r', encoding='utf-8') as f:
         full_content = f.read()
     
     # Apply the original token limit logic: 12000 tokens * 4 chars/token = 48000 chars
@@ -68,11 +81,11 @@ def test_with_truncated_content():
     result = llm_analyze("big@glm", "TARIFLISTE_ABFRAGE", test_content)
     
     if result:
-        print(f"✅ SUCCESS with token-limited content")
+        print("✅ SUCCESS with token-limited content")
         print(f"Response: {result[:200]}...")
         return True
     else:
-        print(f"❌ FAILURE even with token-limited content")
+        print("❌ FAILURE even with token-limited content")
         return False
 
 def test_simplified_content():
@@ -81,7 +94,10 @@ def test_simplified_content():
     print("\n=== TESTING WITH SIMPLIFIED CONTENT ===")
     
     # Load the real crawl file content
-    with open('data/crawls/crawl_SmartEnergy_Bezug_20251126_153200.txt', 'r', encoding='utf-8') as f:
+    crawl_files = sorted(Path("data/crawls").glob("crawl_*.txt"))
+    if not crawl_files:
+        pytest.skip("No crawl files available in data/crawls.", allow_module_level=False)
+    with open(crawl_files[0], 'r', encoding='utf-8') as f:
         full_content = f.read()
     
     # Try extracting just the meaningful parts
@@ -102,11 +118,11 @@ def test_simplified_content():
     result = llm_analyze("big@glm", "TARIFLISTE_ABFRAGE", simplified_content)
     
     if result:
-        print(f"✅ SUCCESS with simplified content")
+        print("✅ SUCCESS with simplified content")
         print(f"Response: {result[:200]}...")
         return True
     else:
-        print(f"❌ FAILURE with simplified content")
+        print("❌ FAILURE with simplified content")
         return False
 
 if __name__ == "__main__":

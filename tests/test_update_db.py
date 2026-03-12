@@ -9,7 +9,7 @@ project_root = Path(__file__).parents[1]
 sys.path.append(str(project_root))
 
 from db.models.spot_prices import Base, SpotPrice
-from db.operations.update_db import find_gaps, find_missing_dates, update_db
+from db.operations.update_db import find_gaps, find_missing_dates
 
 class TestUpdateDB(unittest.TestCase):
     def setUp(self):
