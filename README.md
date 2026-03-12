@@ -8,6 +8,25 @@ This project provides a comprehensive system for collecting, analyzing, and visu
 2. REST API Service
 3. WordPress Integration Plugin
 
+## Quick Start
+
+```bash
+# Install dependencies with uv
+uv sync
+
+# Crawl tariff data (all providers)
+uv run python get_tarife.py
+
+# Crawl specific provider
+uv run python get_tarife.py --anbieter Awattar --crawler jina
+
+# Analyze and normalize with LLM
+uv run python llm_analyze.py --step both
+
+# Start API server
+uv run uvicorn main:app --reload
+```
+
 ## System Architecture
 
 ### Core Components
@@ -95,26 +114,33 @@ The system uses a central `config.py` for:
 
 ### Prerequisites
 
-- Python 3.8+
+- Python 3.10+
+- [uv](https://docs.astral.sh/uv/) package manager
 - SQLite
-- WordPress 5.0+ (for plugin)
 
-### Setup Data Collection
+### Setup with uv
 
 ```bash
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate
-
-# Install requirements
-pip install -r requirements.txt
+# Install dependencies
+uv sync
 
 # Initialize database
-python -m db.models.spot_prices
+uv run python -m db.models.spot_prices
 
 # Test data collection
-python get_tarife.py
+uv run python get_tarife.py
+
+# Run LLM analysis
+uv run python llm_analyze.py --step both
 ```
+
+### Crawler Options
+
+| Crawler | Best For | Example |
+|---------|----------|---------|
+| `jina` | Static websites | `--crawler jina` |
+| `chawan` | JavaScript-rendered sites | `--crawler chawan` |
+| `w3m` | Simple text extraction | `--crawler w3m` |
 
 ### WordPress Plugin Installation
 

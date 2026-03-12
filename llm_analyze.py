@@ -3,6 +3,7 @@ import json
 from config import LLM_CONFIG, QUERY_CONFIG, PASSWORDS
 import os
 import time
+import argparse
 
 
 def llm_analyze(llm_model_name, query_name, context=None):
@@ -102,7 +103,7 @@ def llm_analyze(llm_model_name, query_name, context=None):
         return None
 
 
-def llmanalyze_files(llm_model='arli_nemo', files='crawl_', query_to_use='TARIFLISTE_ABFRAGE', maxtokens=15000):
+def llmanalyze_files(llm_model='arli_nemo', files='crawl_', query_to_use='TARIFLISTE_ABFRAGE', maxtokens=15000, max_files=None):
     """
     Processes files in the 'data/crawls' directory, sends them to the LLM for analysis,
     and saves the results to a report file.
@@ -111,8 +112,11 @@ def llmanalyze_files(llm_model='arli_nemo', files='crawl_', query_to_use='TARIFL
         llm_model (str): The name of the LLM model to use.
         query_to_use (str): The name of the query to use.
         maxtokens (int, optional): The maximum number of tokens to use from a file. Defaults to 12000.
+        max_files (int, optional): Maximum number of files to process. None means all files. Useful for testing.
     """
     flist = [f for f in os.listdir('data/crawls') if files in f]
+    if max_files is not None:
+        flist = flist[:max_files]
     print(flist)
 
     # Create or open the report file
@@ -215,28 +219,36 @@ def del_files(contains='report_', doesnotcontain=''):
 
 
 if __name__ == '__main__':
-    # Example usage:
-    #    llm_model = 'openrouter_llama'
-    #    llm_model = 'groq_r1'
-    #    llm_model = 'amp1_gemma'
-    # llm_model = 'arli_nemo'
-    #    query_to_use = 'TARIFLISTE_ABFRAGE'
-    # delete files starting with report_ and not containing solid
+    parser = argparse.ArgumentParser(description="Analyze crawled files and generate reports.")
+    parser.add_argument('--step', choices=['files', 'report', 'both'], default='both',
+                        help="Steps to run: 'files' for file analysis, 'report' for table solidification, 'both' for both (default: both)")
+    parser.add_argument('--files', default='crawl_',
+                        help="File pattern to match in data/crawls (default: crawl_)")
+    parser.add_argument('--max-files', type=int, default=None,
+                        help="Maximum number of files to analyze (default: all). Use small number for testing.")
+    args = parser.parse_args()
 
-    if True:
+    run_files = args.step in ['files', 'both']
+    run_report = args.step in ['report', 'both']
+
+    report_file_path = None
+
+    if run_files:
         del_files(contains='report_', doesnotcontain='solid')
         report_file_path = llmanalyze_files(
-            llm_model='arli@gemma',
-            files='crawl_',
+            llm_model='tu@mistral',
+            files=args.files,
             query_to_use='TARIFLISTE_ABFRAGE',
-            maxtokens=20000)  # Increased to handle large crawl files
+            maxtokens=20000,
+            max_files=args.max_files)  # Pass max_files for testing
 
-    if True:
-        report_file_path = 'data/crawls/report_20251126.txt'
+    if run_report:
+        if not report_file_path:
+            report_file_path = 'data/crawls/report_20251126.txt'
         del_files(contains='solid')
         solidify_report(
             report_file_path=report_file_path,
             query_to_use='TARIF_TABELLE',
-            llm_model='groq@kimi',
+            llm_model='tu@glm',
             ending='tab.md',
             maxtokens=30000)  # Increased to handle large synthesis reports

@@ -68,7 +68,7 @@ def print_data_beautifully(data):
 
 def crawl_data(data, default_crawler='w3m', n=1, fetchinterval=20, verbose=True, savetofile=True, anbieter=None):
     """Fetches and saves crawl data for the first n crawlable entries using specified crawler,
-    checking file modification time for the fetch interval."""
+    appending multiple URLs to the same file for each provider."""
     crawl_dir = Path("data/crawls")
     crawl_dir.mkdir(parents=True, exist_ok=True)
 
@@ -105,47 +105,18 @@ def crawl_data(data, default_crawler='w3m', n=1, fetchinterval=20, verbose=True,
                 tariftype = entry.get("Typ", "unknown")
                 if url:
                     now = datetime.now()
-                    base_filename = f"crawl_{energieanbieter}_{tariftype}"
+                    timestamp = now.strftime("%Y%m%d_%H%M%S")
+                    # Include a URL hash to differentiate multiple URLs from same provider
+                    import hashlib
+                    url_hash = hashlib.md5(url.encode()).hexdigest()[:6]
+                    filepath = crawl_dir / f"crawl_{energieanbieter}_{tariftype}_{timestamp}_{url_hash}.txt"
 
-                    matching_files = list(
-                        crawl_dir.glob(f"{base_filename}*.txt"))
-                    filepath = None  # Initialize filepath here
-
-                    if matching_files:
-                        # sort the files based on modification time, latest first
-                        matching_files.sort(
-                            key=lambda f: f.stat().st_mtime, reverse=True)
-                        filepath = matching_files[0]
-
-                        timestamp_match = re.search(
-                            r'_(\d{8}_\d{6})\.txt$', filepath.name)
-                        if timestamp_match:
-                            file_timestamp_str = timestamp_match.group(1)
-                            file_timestamp = datetime.strptime(
-                                file_timestamp_str, "%Y%m%d_%H%M%S")
-                            time_diff = now - file_timestamp
-                            print(f"  File exists: {
-                                  filepath} Last modified: {time_diff}")
-                            if time_diff <= timedelta(seconds=fetchinterval):
-                                print(f"  Skipping {
-                                      url} due to fetch interval.")
-                                continue
-                            # we still need to add the timestamp
-                            timestamp = now.strftime("%Y%m%d_%H%M%S")
-                            filepath = crawl_dir / \
-                                f"{base_filename}_{timestamp}.txt"
-                        else:
-                            print(f"  No timestamp found in filename {
-                                  filepath.name}")
-                            timestamp = now.strftime("%Y%m%d_%H%M%S")
-                            filepath = crawl_dir / \
-                                f"{base_filename}_{timestamp}.txt"
-
+                    # Check if file exists (unlikely with timestamp+hash)
+                    if filepath.exists():
+                        print(f"  File already exists: {filepath}")
+                        continue
                     else:
-                        print(f"  File does not exist: {filepath}")
-                        timestamp = now.strftime("%Y%m%d_%H%M%S")
-                        filepath = crawl_dir / \
-                            f"{base_filename}_{timestamp}.txt"
+                        print(f"  Creating: {filepath}")
 
                     try:
                         # Enforce wait time after last crawl
@@ -158,28 +129,51 @@ def crawl_data(data, default_crawler='w3m', n=1, fetchinterval=20, verbose=True,
                                       wait_seconds:.2f} seconds before next crawl...")
                                 time.sleep(wait_seconds)
 
-                        if crawler == 'jina':
-                            crawl_url = f"{crawler_prefix}{url}"
+                        # Check if crawler uses local command (CMD) instead of web API (PREFIX)
+                        crawler_cmd = crawler_config[0].get('CMD', '')
+                        crawler_args = crawler_config[0].get('ARGS', '')
+                        response_format = crawler_config[0].get('Format', 'txt')
+
+                        if crawler_cmd:
+                            # Use local command for crawling (e.g., chawan)
+                            import subprocess
+                            cmd = [crawler_cmd]
+                            if crawler_args:
+                                cmd.extend(crawler_args.split())
+                            cmd.append(url)
+                            result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+                            if result.returncode != 0:
+                                print(f"Error running {crawler}: {result.stderr}")
+                                continue
+                            cleaned_text = result.stdout
+                            encoding = 'utf-8'
                         else:
-                            encoded_url = urllib.parse.quote_plus(url)
-                            crawl_url = f"{crawler_prefix}{encoded_url}"
-                        headers = {}
-                        if crawler_bearer:
-                            headers['Authorization'] = f'Bearer {
+                            # Use web API for crawling
+                            if crawler == 'jina':
+                                crawl_url = f"{crawler_prefix}{url}"
+                            else:
+                                encoded_url = urllib.parse.quote_plus(url)
+                                crawl_url = f"{crawler_prefix}{encoded_url}"
+                            headers = {}
+                            if crawler_bearer:
+                                headers['Authorization'] = f'Bearer {
                                 crawler_bearer}'
 
-                        response = requests.get(crawl_url, headers=headers)
-                        response.raise_for_status()
+                            response = requests.get(crawl_url, headers=headers)
+                            response.raise_for_status()
 
-                        # Decode content based on Content-Type header or try utf-8 if header not found or if it does not define charset
-                        if 'Content-Type' in response.headers and 'charset' in response.headers['Content-Type']:
-                            encoding = response.headers['Content-Type'].split(
-                                'charset=')[-1].strip()
-
-                        else:
-                            encoding = 'utf-8'
-
-                        cleaned_text = response.text
+                            # Handle JSON response format (new amd1 API)
+                            if response_format == 'json':
+                                cleaned_text = response.json().get('content', '')
+                                encoding = 'utf-8'
+                            else:
+                                # Decode content based on Content-Type header or try utf-8 if header not found
+                                if 'Content-Type' in response.headers and 'charset' in response.headers['Content-Type']:
+                                    encoding = response.headers['Content-Type'].split(
+                                        'charset=')[-1].strip()
+                                else:
+                                    encoding = 'utf-8'
+                                cleaned_text = response.text
                         # add energieanbieter to response text
                         cleaned_text = f"Energieanbieter: {
                             energieanbieter}\n{cleaned_text}"
@@ -216,7 +210,7 @@ def crawl_data(data, default_crawler='w3m', n=1, fetchinterval=20, verbose=True,
 
 
 def cleanup(n=1):
-    """Keeps the n last versions of each crawl file and deletes older versions."""
+    """Keeps the n last versions of each crawl file per URL, deletes older versions."""
     crawl_dir = Path("data/crawls")
     if not crawl_dir.exists():
         print("No crawl directory found.")
@@ -224,11 +218,14 @@ def cleanup(n=1):
 
     files_by_base = {}
     for filepath in crawl_dir.glob("crawl_*.txt"):
-        # Extract the base filename using regex
+        # Extract base filename including URL hash to group by unique URL
+        # Format: crawl_Provider_Type_YYYYMMDD_HHMMSS_hash.txt
         match = re.match(
-            r'(crawl_[^_]+_[^_]+)_\d{8}_\d{6}\.txt', filepath.name)
+            r'(crawl_[^_]+_[^_]+)_\d{8}_\d{6}(_[a-f0-9]{6})?\.txt', filepath.name)
         if match:
-            base_filename = match.group(1)
+            # Include hash in base if present (different URLs)
+            url_hash = match.group(2) or ''
+            base_filename = match.group(1) + url_hash
             if base_filename not in files_by_base:
                 files_by_base[base_filename] = []
             files_by_base[base_filename].append(filepath)

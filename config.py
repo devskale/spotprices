@@ -14,10 +14,11 @@ PRODUCT_CONFIG = {'Produktueberblick': [
     {"url": "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ0WJfm_6j_0Sg4E7iW6lJys8bt_X2kneqXIsuKUDFDLObds11UbRDbgadO6nzIfm5yiy-QBbPEduLj/pub?gid=1310884312&single=true&output=csv"}]}
 
 CRAWL_CONFIG = {
-    'w3m': [{"PREFIX": "https://amd1.mooo.com/api/w3m?url=", "Bearer": "test23", "Format": "txt"}],
-    'lynx': [{"PREFIX": "https://amd1.mooo.com/api/lynx?url=", "Bearer": "test23", "Format": "txt"}],
+    'w3m': [{"PREFIX": "https://amd1.mooo.com/api/fetch_url?tool=w3m&url=", "Bearer": "test23", "Format": "json"}],
+    'lynx': [{"PREFIX": "https://amd1.mooo.com/api/fetch_url?tool=lynx&url=", "Bearer": "test23", "Format": "json"}],
     'markdowner': [{"PREFIX": "https://md.dhr.wtf/?url=", "Bearer": "", "format": "md"}],
-    'jina': [{"PREFIX": "https://r.jina.ai/", "Bearer": "jina_2748db5e063f4af18b1376101dcf9db9w_3LGAKd5aTxsXqjUDuJNYmrB_Qy", "Format": "md"}], }
+    'jina': [{"PREFIX": "https://r.jina.ai/", "Bearer": "jina_2748db5e063f4af18b1376101dcf9db9w_3LGAKd5aTxsXqjUDuJNYmrB_Qy", "Format": "md"}],
+    'chawan': [{"CMD": "/Users/johannwaldherr/.pi/agent/skills/fetch-url/fetch-url", "ARGS": "--tool chawan", "Format": "txt"}], }
 
 # Load API keys from passwords.json
 try:
@@ -32,12 +33,16 @@ except json.JSONDecodeError:
 
 
 LLM_CONFIG = {
+    'tu@mistral': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "tu@mistral-small-3.2-24b", }],
+    'tu@qwen': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "tu@qwen-coder-30b", }],
+    'tu@glm': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "tu@glm-4.7-355b", }],
     'big@glm': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "bigmodel@glm-4.5-flash", }],
     'groq@kimi': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "groq@moonshotai/kimi-k2-instruct", }],
     'arli@gemma': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "arli@Gemma-3-27B-it", }],
     'tu@qwen': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "tu@qwen-coder-30b", }],
     'tu@mistral': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "tu@mistral-small-3.2-24b", }],
     'chutes@glm-air': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "chutes@zai-org/GLM-4.5-Air", }],
+    'mistral@medium': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "mistral@mistral-medium-latest", }],
 }
 
 
