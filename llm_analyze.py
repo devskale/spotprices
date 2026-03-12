@@ -226,6 +226,10 @@ if __name__ == '__main__':
                         help="File pattern to match in data/crawls (default: crawl_)")
     parser.add_argument('--max-files', type=int, default=None,
                         help="Maximum number of files to analyze (default: all). Use small number for testing.")
+    parser.add_argument('--report-file', default=None,
+                        help="Report file to solidify (default: latest report_YYYYMMDD.txt)")
+    parser.add_argument('--report-model', default='tu@glm',
+                        help="LLM model for report solidification (default: tu@glm)")
     args = parser.parse_args()
 
     run_files = args.step in ['files', 'both']
@@ -244,11 +248,11 @@ if __name__ == '__main__':
 
     if run_report:
         if not report_file_path:
-            report_file_path = 'data/crawls/report_20251126.txt'
+            report_file_path = args.report_file or f'data/crawls/report_{time.strftime("%Y%m%d")}.txt'
         del_files(contains='solid')
         solidify_report(
             report_file_path=report_file_path,
             query_to_use='TARIF_TABELLE',
-            llm_model='tu@glm',
+            llm_model=args.report_model,
             ending='tab.md',
             maxtokens=30000)  # Increased to handle large synthesis reports
