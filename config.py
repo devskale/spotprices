@@ -80,14 +80,14 @@ Bei dem Stromanbieter OEMAG heisst der Einspeisetarif Marktpreis, nenne hier den
 
 'TARIF_TABELLE': [{"QUERY": """Extrahiere alle Stromtarife aus dem bereitgestellten Context und bringe sie in eine einheitliche Markdown-Tabelle. Verwende exakt dieses Format und diese Spaltenüberschrift:
 
-| Stromanbieter | Tarifname | Tarifart | Preisanpassung | Strompreis | Kurzbeschreibung |
-|:--------------|:----------|:---------|:---------------|:-----------|:----------------|
+| Stromanbieter | Tarifname | Tarifart | Preisanpassung | Strompreis (ct/kWh netto) | Kurzbeschreibung |
+|:--------------|:----------|:---------|:---------------|:-------------------------|:----------------|
 
 - **Stromanbieter**: Der Name des Energieanbieters (z.B. Wien Energie).
 - **Tarifname**: Der spezifische Name des Tarifs (z.B. OPTIMA Entspannt).
 - **Tarifart**: "Bezug" für Strombezug, "Einspeisung" für Einspeisung, oder "Bezug mit Einspeisevergütung" falls beides.
 - **Preisanpassung**: Der Anpassungszeitraum des Preises (z.B. "Stündlich", "Monatlich", "Fixpreis", "Nicht explizit" falls unbekannt).
-- **Strompreis**: Der Preis in ct/kWh netto exkl. MWSt. Wenn brutto und netto vorhanden sind: verwende netto. Wenn nur brutto vorhanden ist: gib den brutto-Wert aus und kennzeichne ihn als "brutto". Bei dynamischen Tarifen gib die Formel an (z.B. "EPEX Spot AT + 1,44 ct/kWh"). Wenn mehrere Arbeitspreise je nach Bedingung gelten, schreibe beide Werte mit Bedingung (z.B. "14,55 ct/kWh netto (Standard); 12,55 ct/kWh netto (Smart Meter)").
+- **Strompreis (ct/kWh netto)**: Der Preis in ct/kWh netto exkl. MWSt. Schreibe NUR die Zahl mit "ct/kWh" - OHNE das Wort "netto" im Wert. Wenn brutto und netto vorhanden sind: verwende netto. Wenn nur brutto vorhanden ist: gib den brutto-Wert aus und kennzeichne ihn mit "(brutto)". Bei dynamischen Tarifen gib die Formel an (z.B. "EPEX Spot AT + 1,44 ct/kWh"). Wenn mehrere Arbeitspreise je nach Bedingung gelten, schreibe beide Werte mit Bedingung (z.B. "14,55 ct/kWh (Standard); 12,55 ct/kWh (Smart Meter)").
 - **Kurzbeschreibung**: Eine kurze Zusammenfassung des Tarifs, inkl. Vertragsbindung, Rabatte, Preisgarantie und Aktualität (z.B. "Fixpreis – 1 Jahr, Preisgarantie ab Abschluss: 12 Monate").
 
 Liste jeden Tarif in einer separaten Zeile. Liste nur Tarife mit explizitem Strompreis oder expliziter Formel/Index-Referenz; Tarife ohne Preis/Formel weglassen. Antworte NUR mit der Markdown-Tabelle und ohne Code-Block-Markierungen (keine ```).
