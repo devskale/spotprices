@@ -158,7 +158,7 @@ class Strom_Tarif_Plugin {
         $headers = array(
             'provider_tariff' => array('Anbieter', 'Tarif'),
             'tarif_type' => array('Tarifart', 'Preisanpassung'),
-            'strompreis' => 'Strompreis',
+            'strompreis' => 'Strompreis (netto exkl.)',
             'kurzbeschreibung' => 'Beschreibung'
         );
         
@@ -182,7 +182,14 @@ class Strom_Tarif_Plugin {
               // Provider and Tariff Name combined
               $output .= '<td class="two-line-cell">';
               $output .= '<div class="primary-text">' . esc_html($tariff['stromanbieter']) . '</div>';
-              $output .= '<div class="secondary-text">' . esc_html($tariff['tarifname']) . '</div>';
+              
+              $tarifname = isset($tariff['tarifname']) ? $tariff['tarifname'] : '';
+              $link = isset($tariff['link']) ? trim($tariff['link']) : '';
+              if (!empty($link) && $link !== '-') {
+                  $output .= '<div class="secondary-text"><a href="' . esc_url($link) . '" target="_blank" rel="noopener noreferrer">' . esc_html($tarifname) . '</a></div>';
+              } else {
+                  $output .= '<div class="secondary-text">' . esc_html($tarifname) . '</div>';
+              }
               $output .= '</td>';
             
               // Tarif Type and Price Adjustment combined
@@ -231,7 +238,14 @@ class Strom_Tarif_Plugin {
                 // Card Header
                 $output .= '<div class="tariff-card-header">';
                 $output .= '<div class="provider">' . esc_html($tariff['stromanbieter']) . '</div>';
-                $output .= '<div class="tariff-name">' . esc_html($tariff['tarifname']) . '</div>';
+                
+                $tarifname = isset($tariff['tarifname']) ? $tariff['tarifname'] : '';
+                $link = isset($tariff['link']) ? trim($tariff['link']) : '';
+                if (!empty($link) && $link !== '-') {
+                    $output .= '<div class="tariff-name"><a href="' . esc_url($link) . '" target="_blank" rel="noopener noreferrer">' . esc_html($tarifname) . '</a></div>';
+                } else {
+                    $output .= '<div class="tariff-name">' . esc_html($tarifname) . '</div>';
+                }
                 $output .= '</div>';
 
                 // Card Body

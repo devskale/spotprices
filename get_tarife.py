@@ -2,264 +2,166 @@ import csv
 import requests
 from io import StringIO
 from config import CRAWL_CONFIG, TARIF_CONFIG, get_secret
-import json
-import os
+import hashlib
 from datetime import datetime, timedelta
 from pathlib import Path
 import time
 import urllib.parse
 import re
 import argparse
+import subprocess
 
 
 def fetch_and_convert_csv_to_dict():
-    """
-    Fetches CSV data from the URL in config, parses it, and returns a dictionary.
-    """
+    """Fetches CSV data from the URL in config, parses it, and returns a dictionary."""
     all_data = {}
     for entry in TARIF_CONFIG['Tarifueberblick']:
         url = entry.get("url")
         description = entry.get("Beschreibung", "no description")
-
         if url:
             try:
                 response = requests.get(url)
                 response.raise_for_status()
-
                 csv_data = StringIO(response.text)
                 reader = csv.DictReader(csv_data)
                 all_data[description] = list(reader)
-
-            except requests.exceptions.RequestException as e:
-                print(f"Error fetching URL {url}: {e}")
-            except csv.Error as e:
-                print(f"Error parsing CSV data from {url}: {e}")
             except Exception as e:
-                print(f"An unexpected error occurred: {e}")
-        else:
-            print(f"Skipping entry without a URL: {entry}")
-
+                print(f"✗ CSV fetch error: {e}")
     return all_data
 
 
-def print_data_beautifully(data):
-    """Prints the fetched data in a human-readable format."""
-    if not data:
-        print("No data to display.")
-        return
-
-    for description, rows in data.items():
-        print(f"Data for: {description}\n")
-        if not rows:
-            print("No data rows available.\n")
-        else:
-            for row in rows:
-                print(json.dumps(row, indent=4))
-                print("----")
-
-
-def crawl_data(data, default_crawler='w3m', n=1, fetchinterval=20, verbose=True, savetofile=True, anbieter=None):
-    """Fetches and saves crawl data for the first n crawlable entries using specified crawler,
-    appending multiple URLs to the same file for each provider."""
+def crawl_data(data, default_crawler='w3m', n=0, anbieter=None):
+    """Fetches and saves crawl data using specified crawler."""
     crawl_dir = Path("data/crawls")
     crawl_dir.mkdir(parents=True, exist_ok=True)
 
     crawled_count = 0
-    last_crawl_time = None  # Initialize variable to track last crawl time
+    last_crawl_time = None
 
     for description, rows in data.items():
         for entry in rows:
             if n > 0 and crawled_count >= n:
                 break
-
             if anbieter and entry.get("Anbieter", "").lower() != anbieter.lower():
                 continue
 
             crawl_flag = entry.get("crawl", False)
-            if crawl_flag is True or str(crawl_flag).lower() == "y":
+            if not (crawl_flag is True or str(crawl_flag).lower() == 'y'):
+                continue
 
-                # Use 'tool' from data or default
+            crawler = entry.get('tool', default_crawler)
+            if crawler not in CRAWL_CONFIG:
+                crawler = default_crawler
+            crawler_config = CRAWL_CONFIG.get(crawler, [])
+            if not crawler_config:
+                print(f"✗ No config for: {crawler}")
+                continue
 
-                crawler = entry.get('tool', default_crawler)
-                if crawler not in CRAWL_CONFIG:
-                    crawler = default_crawler
-                print(f"Crawling with {crawler}...")
-                crawler_config = CRAWL_CONFIG.get(crawler, [])
+            crawler_prefix = crawler_config[0].get('PREFIX', '')
+            crawler_bearer = crawler_config[0].get('Bearer', '')
+            bearer_key = crawler_config[0].get("BearerKey", "")
+            if bearer_key and not crawler_bearer:
+                crawler_bearer = get_secret(bearer_key, "")
 
-                if not crawler_config:
-                    print(f"No configuration found for crawler: {crawler}")
-                    continue
+            url = entry.get("Link")
+            provider = entry.get("Anbieter", "unknown")
+            tarif_type = entry.get("Typ", "unknown")
 
-                crawler_prefix = crawler_config[0].get('PREFIX', '')
-                crawler_bearer = crawler_config[0].get('Bearer', '')
-                bearer_key = crawler_config[0].get("BearerKey", "")
-                if bearer_key and not crawler_bearer:
-                    crawler_bearer = get_secret(bearer_key, "")
+            if not url:
+                continue
 
-                url = entry.get("Link")
-                energieanbieter = entry.get("Anbieter", "unknown")
-                tariftype = entry.get("Typ", "unknown")
-                if url:
-                    now = datetime.now()
-                    timestamp = now.strftime("%Y%m%d_%H%M%S")
-                    # Include a URL hash to differentiate multiple URLs from same provider
-                    import hashlib
-                    url_hash = hashlib.md5(url.encode()).hexdigest()[:6]
-                    filepath = crawl_dir / f"crawl_{energieanbieter}_{tariftype}_{timestamp}_{url_hash}.txt"
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            url_hash = hashlib.md5(url.encode()).hexdigest()[:6]
+            filepath = crawl_dir / f"crawl_{provider}_{tarif_type}_{timestamp}_{url_hash}.txt"
 
-                    # Check if file exists (unlikely with timestamp+hash)
-                    if filepath.exists():
-                        print(f"  File already exists: {filepath}")
+            if filepath.exists():
+                print(f"⏭ {provider}/{tarif_type}")
+                continue
+
+            try:
+                # Rate limiting for non-w3m crawlers
+                if last_crawl_time and crawler != 'w3m':
+                    elapsed = datetime.now() - last_crawl_time
+                    if elapsed < timedelta(seconds=2):
+                        time.sleep((timedelta(seconds=2) - elapsed).total_seconds())
+
+                crawler_cmd = crawler_config[0].get('CMD', '')
+                crawler_args = crawler_config[0].get('ARGS', '')
+                response_format = crawler_config[0].get('Format', 'txt')
+
+                if crawler_cmd:
+                    cmd = [crawler_cmd]
+                    if crawler_args:
+                        cmd.extend(crawler_args.split())
+                    cmd.append(url)
+                    result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+                    if result.returncode != 0:
+                        print(f"✗ {crawler} failed")
                         continue
+                    text = result.stdout
+                else:
+                    if crawler == 'jina':
+                        crawl_url = f"{crawler_prefix}{url}"
                     else:
-                        print(f"  Creating: {filepath}")
+                        crawl_url = f"{crawler_prefix}{urllib.parse.quote_plus(url)}"
+                    headers = {"Authorization": f"Bearer {crawler_bearer}"} if crawler_bearer else {}
+                    response = requests.get(crawl_url, headers=headers)
+                    response.raise_for_status()
+                    text = response.json().get('content', '') if response_format == 'json' else response.text
 
-                    try:
-                        # Enforce wait time after last crawl
-                        if last_crawl_time:
-                            time_since_last_crawl = datetime.now() - last_crawl_time
-                            if time_since_last_crawl < timedelta(seconds=2) and crawler != 'w3m':
-                                wait_seconds = (
-                                    timedelta(seconds=2) - time_since_last_crawl).total_seconds()
-                                print(f"  Waiting {
-                                      wait_seconds:.2f} seconds before next crawl...")
-                                time.sleep(wait_seconds)
+                # Clean text
+                text = f"Energieanbieter: {provider}\n{text}"
+                text = re.sub(r'[\r\n]+', '\n', text)
+                text = re.sub(r'\s+', ' ', text)
+                text = re.sub(r'-+', ' ', text)
+                text = re.sub(r'[\xa0□]', ' ', text)
+                text = re.sub(r'━{2,}', '━', text)
 
-                        # Check if crawler uses local command (CMD) instead of web API (PREFIX)
-                        crawler_cmd = crawler_config[0].get('CMD', '')
-                        crawler_args = crawler_config[0].get('ARGS', '')
-                        response_format = crawler_config[0].get('Format', 'txt')
+                # Add frontmatter
+                crawl_date = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+                text = f"---\nurl: {url}\ncrawl_date: {crawl_date}\nprovider: {provider}\ntype: {tarif_type}\n---\n\n{text}"
 
-                        if crawler_cmd:
-                            # Use local command for crawling (e.g., chawan)
-                            import subprocess
-                            cmd = [crawler_cmd]
-                            if crawler_args:
-                                cmd.extend(crawler_args.split())
-                            cmd.append(url)
-                            result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
-                            if result.returncode != 0:
-                                print(f"Error running {crawler}: {result.stderr}")
-                                continue
-                            cleaned_text = result.stdout
-                            encoding = 'utf-8'
-                        else:
-                            # Use web API for crawling
-                            if crawler == 'jina':
-                                crawl_url = f"{crawler_prefix}{url}"
-                            else:
-                                encoded_url = urllib.parse.quote_plus(url)
-                                crawl_url = f"{crawler_prefix}{encoded_url}"
-                            headers = {}
-                            if crawler_bearer:
-                                headers["Authorization"] = f"Bearer {crawler_bearer}"
+                filepath.write_text(text, encoding='utf-8')
+                print(f"✓ {provider}/{tarif_type} [{crawler}]")
+                crawled_count += 1
+                last_crawl_time = datetime.now()
 
-                            response = requests.get(crawl_url, headers=headers)
-                            response.raise_for_status()
+            except Exception as e:
+                print(f"✗ {url[:40]}: {str(e)[:50]}")
 
-                            # Handle JSON response format (new amd1 API)
-                            if response_format == 'json':
-                                cleaned_text = response.json().get('content', '')
-                                encoding = 'utf-8'
-                            else:
-                                # Decode content based on Content-Type header or try utf-8 if header not found
-                                if 'Content-Type' in response.headers and 'charset' in response.headers['Content-Type']:
-                                    encoding = response.headers['Content-Type'].split(
-                                        'charset=')[-1].strip()
-                                else:
-                                    encoding = 'utf-8'
-                                cleaned_text = response.text
-                        # add energieanbieter to response text
-                        cleaned_text = f"Energieanbieter: {
-                            energieanbieter}\n{cleaned_text}"
-
-                        # ADD CLEANUP HERE
-                        # Remove unwanted characters.
-                        # remove multiple line breaks
-                        cleaned_text = re.sub(r'[\r\n]+', '\n', cleaned_text)
-                        # remove multiple spaces
-                        cleaned_text = re.sub(r'\s+', ' ', cleaned_text)
-                        # remove multiple --
-                        cleaned_text = re.sub(r'-+', ' ', cleaned_text)
-                        # remove &nbsp; (non-breaking space)
-                        cleaned_text = re.sub(r'[\xa0]', ' ', cleaned_text)
-                        # remove □
-                        cleaned_text = re.sub(r'□', '', cleaned_text)
-                        # remove multiple number of ━
-                        cleaned_text = re.sub(r'━{2,}', '━', cleaned_text)
-
-                        # add YAML frontmatter with metadata
-                        crawl_date = now.strftime("%Y-%m-%dT%H:%M:%S")
-                        frontmatter = f"""---
-url: {url}
-crawl_date: {crawl_date}
-provider: {energieanbieter}
-type: {tariftype}
----
-
-"""
-                        cleaned_text = frontmatter + cleaned_text
-
-                        if verbose:
-                            print(f"Fetched data from {url}")
-                        if savetofile:
-                            with open(filepath, "w", encoding=encoding) as file:
-                                file.write(cleaned_text)
-                            print(f"Successfully crawled and saved {filepath}")
-
-                        crawled_count += 1
-                        last_crawl_time = datetime.now()  # Update last crawl time
-
-                    except requests.exceptions.RequestException as e:
-                        print(f"Error fetching URL {url}: {e}")
-                    except Exception as e:
-                        print(f"An unexpected error occurred: {e}")
+    print(f"\nCrawled: {crawled_count}")
 
 
 def cleanup(n=1):
-    """Keeps the n last versions of each crawl file per URL, deletes older versions."""
+    """Keeps the n last versions of each crawl file per URL."""
     crawl_dir = Path("data/crawls")
     if not crawl_dir.exists():
-        print("No crawl directory found.")
         return
 
     files_by_base = {}
     for filepath in crawl_dir.glob("crawl_*.txt"):
-        # Extract base filename including URL hash to group by unique URL
-        # Format: crawl_Provider_Type_YYYYMMDD_HHMMSS_hash.txt
-        match = re.match(
-            r'(crawl_[^_]+_[^_]+)_\d{8}_\d{6}(_[a-f0-9]{6})?\.txt', filepath.name)
+        match = re.match(r'(crawl_[^_]+_[^_]+)_\d{8}_\d{6}(_[a-f0-9]{6})?\.txt', filepath.name)
         if match:
-            # Include hash in base if present (different URLs)
-            url_hash = match.group(2) or ''
-            base_filename = match.group(1) + url_hash
-            if base_filename not in files_by_base:
-                files_by_base[base_filename] = []
-            files_by_base[base_filename].append(filepath)
+            base = match.group(1) + (match.group(2) or '')
+            files_by_base.setdefault(base, []).append(filepath)
 
-    for base_filename, filepaths in files_by_base.items():
+    deleted = 0
+    for filepaths in files_by_base.values():
         if len(filepaths) > n:
-            filepaths.sort(key=lambda f: f.stat().st_mtime, reverse=True)
-            files_to_delete = filepaths[n:]
-            # print(f"  Found {len(files_to_delete)} old files for {base_filename}")
-            for file_to_delete in files_to_delete:
-                print(f"  (-) {file_to_delete}")
-                os.remove(file_to_delete)
-        else:
-            # print(f"  No old files to delete for {base_filename}")
-            print(".", end="")
-    print("")
+            for f in sorted(filepaths, key=lambda x: x.stat().st_mtime, reverse=True)[n:]:
+                f.unlink()
+                deleted += 1
+
+    if deleted:
+        print(f"Cleaned: {deleted} old files")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Crawl tariff data for energy providers.")
-    parser.add_argument('--anbieter', type=str, help="Filter by specific provider (Anbieter)")
-    parser.add_argument('--crawler', type=str, default='w3m', help="Specify the crawler tool (default: w3m)")
+    parser = argparse.ArgumentParser(description="Crawl tariff data")
+    parser.add_argument('--anbieter', type=str, help="Filter by provider")
+    parser.add_argument('--crawler', type=str, default='w3m', help="Crawler tool (default: w3m)")
     args = parser.parse_args()
 
     data = fetch_and_convert_csv_to_dict()
-    # print(data)
-    # print_data_beautifully(data)
-    crawl_data(data=data, default_crawler=args.crawler, n=0,
-               fetchinterval=20, verbose=True, savetofile=True, anbieter=args.anbieter)
+    crawl_data(data=data, default_crawler=args.crawler, n=0, anbieter=args.anbieter)
     cleanup(n=1)

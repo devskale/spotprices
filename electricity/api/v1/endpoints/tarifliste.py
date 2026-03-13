@@ -4,11 +4,28 @@ from fastapi import APIRouter, HTTPException, Query
 from typing import List
 from pathlib import Path
 import re
+from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime
 
 from ..models import TarifInfo
 
 router = APIRouter(prefix="/tarifliste", tags=["tarifliste"])
+
+_BRUTTO_CTKWH_RE = re.compile(r"(?P<num>\d+(?:[.,]\d+)?)\s*ct/kWh\s*\(brutto\)", flags=re.IGNORECASE)
+
+
+def normalize_strompreis_to_netto_exkl_mwst(value: str) -> str:
+    def replace_match(match: re.Match) -> str:
+        raw_num = match.group("num")
+        try:
+            brutto = Decimal(raw_num.replace(",", "."))
+            netto = (brutto / Decimal("1.2")).quantize(Decimal("0.0001"), rounding=ROUND_HALF_UP)
+            netto_str = str(netto).replace(".", ",")
+            return f"{netto_str} ct/kWh"
+        except Exception:
+            return match.group(0)
+
+    return _BRUTTO_CTKWH_RE.sub(replace_match, value)
 
 
 def parse_markdown_table(content: str) -> List[TarifInfo]:
@@ -33,14 +50,27 @@ def parse_markdown_table(content: str) -> List[TarifInfo]:
         # Split line by | and remove empty strings
         columns = [col.strip() for col in line.split('|') if col.strip()]
 
-        if len(columns) >= 6:  # Ensure we have all required columns
+        if len(columns) >= 7:
+            strompreis = normalize_strompreis_to_netto_exkl_mwst(columns[4])
             tarif = TarifInfo(
                 stromanbieter=columns[0],
                 tarifname=columns[1],
                 tarifart=columns[2],
                 preisanpassung=columns[3],
-                strompreis=columns[4],
-                kurzbeschreibung=columns[5]
+                strompreis=strompreis,
+                link=columns[5],
+                kurzbeschreibung=columns[6],
+            )
+            tarife.append(tarif)
+        elif len(columns) >= 6:
+            strompreis = normalize_strompreis_to_netto_exkl_mwst(columns[4])
+            tarif = TarifInfo(
+                stromanbieter=columns[0],
+                tarifname=columns[1],
+                tarifart=columns[2],
+                preisanpassung=columns[3],
+                strompreis=strompreis,
+                kurzbeschreibung=columns[5],
             )
             tarife.append(tarif)
 

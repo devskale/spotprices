@@ -11,6 +11,7 @@ class TarifInfo(BaseModel):
     tarifart: str
     preisanpassung: str
     strompreis: str
+    link: str = "-"
     kurzbeschreibung: str
 
 

@@ -78,7 +78,7 @@ Regeln:
 
 Bei dem Stromanbieter OEMAG heisst der Einspeisetarif Marktpreis, nenne hier den letztgenannten Preis inkl. Monatsangabe. Beim Anbieter WienEnergie ist ein Verbrauchspreis in cent/kWh angegeben. Antworte nur mit der Liste der Tarife in dem Schema. Keine weiteren Informationen oder Erklärungen. Keine Webseiten-Elemente wie Navigation, Footer, Werbung, Gutscheine, Rabatte etc. Context Start: """, }],
 
-'TARIF_TABELLE': [{"QUERY": """Extrahiere alle Stromtarife aus dem bereitgestellten Context und bringe sie in eine einheitliche Markdown-Tabelle. Verwende exakt dieses Format und diese Spaltenüberschrift:
+    'TARIF_TABELLE': [{"QUERY": """Extrahiere alle Stromtarife aus dem bereitgestellten Context und bringe sie in eine einheitliche Markdown-Tabelle. Verwende exakt dieses Format und diese Spaltenüberschrift:
 
 | Stromanbieter | Tarifname | Tarifart | Preisanpassung | Strompreis (ct/kWh netto) | Link | Kurzbeschreibung |
 |:--------------|:----------|:---------|:---------------|:-------------------------|:----|:----------------|
@@ -87,7 +87,7 @@ Bei dem Stromanbieter OEMAG heisst der Einspeisetarif Marktpreis, nenne hier den
 - **Tarifname**: Der spezifische Name des Tarifs (z.B. OPTIMA Entspannt).
 - **Tarifart**: "Bezug" für Strombezug, "Einspeisung" für Einspeisung, oder "Bezug mit Einspeisevergütung" falls beides.
 - **Preisanpassung**: Der Anpassungszeitraum des Preises (z.B. "Stündlich", "Monatlich", "Fixpreis", "Nicht explizit" falls unbekannt).
-- **Strompreis (ct/kWh netto)**: Der Preis in ct/kWh netto exkl. MWSt. Schreibe NUR die Zahl mit "ct/kWh" - OHNE das Wort "netto" im Wert. Wenn brutto und netto vorhanden sind: verwende netto. Wenn nur brutto vorhanden ist: gib den brutto-Wert aus und kennzeichne ihn mit "(brutto)". Bei dynamischen Tarifen gib die Formel an (z.B. "EPEX Spot AT + 1,44 ct/kWh"). Wenn mehrere Arbeitspreise je nach Bedingung gelten, schreibe beide Werte mit Bedingung (z.B. "14,55 ct/kWh (Standard); 12,55 ct/kWh (Smart Meter)").
+- **Strompreis (ct/kWh netto)**: Der Preis in ct/kWh netto exkl. MWSt. Schreibe NUR die Zahl mit "ct/kWh" - OHNE das Wort "netto" im Wert. Wenn brutto und netto vorhanden sind: verwende netto. Wenn nur brutto vorhanden ist und 20% USt erwähnt/naheliegend sind: rechne netto = brutto / 1,2 und gib den netto-Wert aus. Bei dynamischen Tarifen gib die Formel an (z.B. "EPEX Spot AT + 1,44 ct/kWh"). Wenn mehrere Arbeitspreise je nach Bedingung gelten, schreibe beide Werte mit Bedingung (z.B. "14,55 ct/kWh (Standard); 12,55 ct/kWh (Smart Meter)").
 - **Link**: Die URL zur Original-Tarifseite. Verwende die "URL:" Zeile die im Context für jeden Anbieter steht (z.B. "URL: https://..."). Falls keine URL vorhanden ist, schreibe "-".
 - **Kurzbeschreibung**: Eine kurze Zusammenfassung des Tarifs, inkl. Vertragsbindung, Rabatte, Preisgarantie und Aktualität (z.B. "Fixpreis – 1 Jahr, Preisgarantie ab Abschluss: 12 Monate").
 
@@ -96,9 +96,7 @@ Keine Schätzungen oder erfundene Werte: gib nur Werte/Formeln aus, die im Conte
 
 Context Start:
 
-"""
-
-, }],
+""", }],
     'SOLIDIFY_REPORT':
     [{"QUERY":
       """
