@@ -239,7 +239,7 @@ if __name__ == '__main__':
                         help="Maximum number of files to analyze (default: all). Use small number for testing.")
     parser.add_argument('--report-file', default=None,
                         help="Report file to solidify (default: latest report_YYYYMMDD.txt)")
-    parser.add_argument('--report-model', default='tu@glm',
+    parser.add_argument('--report-model', default='groq@kimi',
                         help="LLM model for report solidification (default: tu@glm)")
     args = parser.parse_args()
 
