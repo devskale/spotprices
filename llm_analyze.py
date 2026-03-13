@@ -3,6 +3,15 @@ from config import LLM_CONFIG, QUERY_CONFIG, PASSWORDS
 import os
 import time
 import argparse
+import re
+
+
+def extract_url_from_frontmatter(content):
+    """Extract URL from YAML frontmatter at the beginning of content."""
+    match = re.match(r'^---\s*\nurl:\s*(\S+)', content)
+    if match:
+        return match.group(1)
+    return None
 
 
 def llm_analyze(llm_model_name, query_name, context=None):
@@ -144,8 +153,11 @@ def llmanalyze_files(llm_model='arli_nemo', files='crawl_', query_to_use='TARIFL
                     # Append the result to the report file
                     # stromanbieter is the second part of the filename
                     Stromanbietername = f.split('_')[1]
+                    # Extract URL from frontmatter
+                    url = extract_url_from_frontmatter(example_context)
+                    url_line = f"URL: {url}\n" if url else ""
                     report_file.write(
-                        f"-- Stromanbieter: {Stromanbietername}\n{result}\n\n")
+                        f"-- Stromanbieter: {Stromanbietername}\n{url_line}{result}\n\n")
                     # Wait 2s
                     time.sleep(2)
                 else:

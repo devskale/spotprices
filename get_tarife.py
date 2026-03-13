@@ -188,6 +188,18 @@ def crawl_data(data, default_crawler='w3m', n=1, fetchinterval=20, verbose=True,
                         # remove multiple number of ━
                         cleaned_text = re.sub(r'━{2,}', '━', cleaned_text)
 
+                        # add YAML frontmatter with metadata
+                        crawl_date = now.strftime("%Y-%m-%dT%H:%M:%S")
+                        frontmatter = f"""---
+url: {url}
+crawl_date: {crawl_date}
+provider: {energieanbieter}
+type: {tariftype}
+---
+
+"""
+                        cleaned_text = frontmatter + cleaned_text
+
                         if verbose:
                             print(f"Fetched data from {url}")
                         if savetofile:
