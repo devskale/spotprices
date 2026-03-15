@@ -15,7 +15,7 @@ The user requested verification of the complete spotprices system:
 - **Systemd service management**: `fastapi.service` runs the API
 - **Python environment**: Using `uv` package manager, virtual environments
 - **WordPress plugin architecture**: Shortcodes `[display_strom_tariffs]`, `[stromgraph]`
-- **Bearer token authentication**: API requires `Authorization: Bearer Gw3nAt23Elec`
+- **Bearer token authentication**: API requires `Authorization: Bearer YOUR_API_KEY`
 - **LLM integration**: uniinfer server at port 8123 for tariff analysis
 - **Cron-based automation**: Charts generated twice daily, tariffs crawled weekly
 
@@ -61,7 +61,7 @@ router.include_router(spotprices.router, dependencies=[Depends(require_bearer_au
 
 ### `/etc/systemd/system/fastapi.service` (amd)
 - **Why important**: Needs `STROM_TARIF_API_KEY` environment variable for authentication
-- **Changes needed**: Add `Environment="STROM_TARIF_API_KEY=Gw3nAt23Elec"`
+- **Changes needed**: Add `Environment="STROM_TARIF_API_KEY=YOUR_API_KEY"`
 
 ### `/home/ubuntu/code/web_apis/main.py` (amd)
 - **Why important**: Main FastAPI app that dynamically loads electricity module
@@ -103,7 +103,7 @@ User=ubuntu
 Group=www-data
 WorkingDirectory=/home/ubuntu/code/web_apis
 Environment="PATH=/home/ubuntu/code/web_apis/.venv/bin"
-Environment="STROM_TARIF_API_KEY=Gw3nAt23Elec"
+Environment="STROM_TARIF_API_KEY=YOUR_API_KEY"
 ExecStart=/home/ubuntu/code/web_apis/.venv/bin/gunicorn -w 1 -k uvicorn.workers.UvicornWorker main:app --bind 0.0.0.0:8001 --timeout 120
 
 [Install]
@@ -124,13 +124,13 @@ sudo chown -R www-data:www-data /var/www/gwen.at/wp-content/plugins/strom-tarif-
 
 ### Test API (amd):
 ```bash
-curl -s localhost:8001/electricity/tarifliste?rows=2 -H "Authorization: Bearer Gw3nAt23Elec"
-curl -s "localhost:8001/electricity/spotprices/chart/latest?range=singleday" -H "Authorization: Bearer Gw3nAt23Elec" | head -3
+curl -s localhost:8001/electricity/tarifliste?rows=2 -H "Authorization: Bearer YOUR_API_KEY"
+curl -s "localhost:8001/electricity/spotprices/chart/latest?range=singleday" -H "Authorization: Bearer YOUR_API_KEY" | head -3
 ```
 
 ### Test WordPress (amd2):
 ```bash
-curl -s "https://amd1.mooo.com/api/electricity/tarifliste?rows=2" -H "Authorization: Bearer Gw3nAt23Elec"
+curl -s "https://amd1.mooo.com/api/electricity/tarifliste?rows=2" -H "Authorization: Bearer YOUR_API_KEY"
 wp option list --path=/var/www/gwen.at --search='strom_*'
 ```
 
@@ -145,8 +145,8 @@ wp option list --path=/var/www/gwen.at --search='strom_*'
 
 | Token | Value | Usage |
 |-------|-------|-------|
-| STROM_TARIF_API_KEY | Gw3nAt23Elec | Electricity API auth |
-| TOKEN_2 | Gw3nAt23Elec | WordPress plugin |
+| STROM_TARIF_API_KEY | YOUR_API_KEY | Electricity API auth |
+| TOKEN_2 | YOUR_API_KEY | WordPress plugin |
 
 ## 9. Directory Structure (amd)
 

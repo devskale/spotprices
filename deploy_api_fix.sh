@@ -24,7 +24,7 @@ User=ubuntu
 Group=www-data
 WorkingDirectory=/home/ubuntu/code/web_apis
 Environment="PATH=/home/ubuntu/code/web_apis/.venv/bin"
-Environment="STROM_TARIF_API_KEY=Gw3nAt23Elec"
+Environment="STROM_TARIF_API_KEY=YOUR_API_KEY"
 ExecStart=/home/ubuntu/code/web_apis/.venv/bin/gunicorn -w 1 -k uvicorn.workers.UvicornWorker main:app --bind 0.0.0.0:8001 --timeout 120
 
 [Install]
@@ -41,7 +41,7 @@ sleep 2
 
 # 5. Verify
 echo "4. Verifying API..."
-curl -s localhost:8001/electricity/tarifliste?rows=1 -H "Authorization: Bearer Gw3nAt23Elec" | head -100
+curl -s localhost:8001/electricity/tarifliste?rows=1 -H "Authorization: Bearer YOUR_API_KEY" | head -100
 
 echo ""
 echo "=== Done ==="

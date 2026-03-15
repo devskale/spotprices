@@ -222,9 +222,9 @@ The WordPress plugin fetches data from:
 
 | Token Name | Value | Usage |
 |------------|-------|-------|
-| TOKEN_1 | test12 | Development |
-| TOKEN_2 | Gw3nAt23Elec | WordPress plugin |
-| TOKEN_3 | S$Kale23Elec | Secondary |
+| TOKEN_1 | (see passwords.json) | Development |
+| TOKEN_2 | (see passwords.json) | WordPress plugin |
+| TOKEN_3 | (see passwords.json) | Secondary |
 | strom_tarif_api_key | (from passwords.json) | Electricity API |
 
 ### LLM API Keys
@@ -254,7 +254,7 @@ from config import get_secret  # Fails because config.py is in spotprices/, not 
 **Verification**:
 ```bash
 ssh amd "systemctl restart fastapi.service"
-ssh amd "curl localhost:8001/electricity/tarifliste?rows=1 -H 'Authorization: Bearer Gw3nAt23Elec'"
+ssh amd "curl localhost:8001/electricity/tarifliste?rows=1 -H 'Authorization: Bearer YOUR_API_KEY'"
 ```
 
 ---
@@ -325,7 +325,7 @@ ssh amd "ls -lt /home/ubuntu/code/spotprices/data/charts/ | head -5"
 
 ### Test API Locally
 ```bash
-ssh amd "curl localhost:8001/electricity/tarifliste?rows=3 -H 'Authorization: Bearer Gw3nAt23Elec'"
+ssh amd "curl localhost:8001/electricity/tarifliste?rows=3 -H 'Authorization: Bearer YOUR_API_KEY'"
 ```
 
 ### Run Crawler Manually
