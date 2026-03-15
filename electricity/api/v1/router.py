@@ -1,15 +1,20 @@
 
 # electricity/api/v1/router.py
 from typing import Optional
+import os
 
 from fastapi import APIRouter, Depends, Header, HTTPException
 
-from config import get_secret
 from .endpoints import tarifliste, spotprices
 
 
+def get_strom_tarif_api_key() -> str:
+    """Get API key from environment variable (works in both contexts)."""
+    return os.environ.get("STROM_TARIF_API_KEY", "")
+
+
 def require_bearer_auth(authorization: Optional[str] = Header(default=None)) -> None:
-    expected = get_secret("strom_tarif_api_key", "")
+    expected = get_strom_tarif_api_key()
     if not expected:
         return
 
