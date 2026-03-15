@@ -70,7 +70,7 @@ def llm_analyze(llm_model_name, query_name, context=None):
         return None
 
 
-def llmanalyze_files(llm_model='tu@mistral', files='crawl_', query_to_use='TARIFLISTE_ABFRAGE', maxtokens=20000, max_files=None):
+def llmanalyze_files(llm_model='tu@mistral', files='crawl_', query_to_use='TARIFLISTE_ABFRAGE', maxtokens=20000, max_files=None, max_retries=3):
     """Processes files and saves results to a report file."""
     flist = sorted([f for f in os.listdir('data/crawls') if files in f])
     if max_files:
@@ -83,6 +83,10 @@ def llmanalyze_files(llm_model='tu@mistral', files='crawl_', query_to_use='TARIF
     print(f"Analyzing {len(flist)} files with {llm_model}...")
 
     report_path = f'data/crawls/report_{time.strftime("%Y%m%d")}.txt'
+    success_count = 0
+    fail_count = 0
+    failed_files = []
+
     with open(report_path, 'a', encoding='utf-8') as report_file:
         for i, f in enumerate(flist, 1):
             content = Path(f'data/crawls/{f}').read_text(encoding='utf-8')
@@ -93,17 +97,35 @@ def llmanalyze_files(llm_model='tu@mistral', files='crawl_', query_to_use='TARIF
             provider = f.split('_')[1] if '_' in f else 'unknown'
             print(f"  [{i}/{len(flist)}] {provider} ({tokens}t)", end=" ", flush=True)
 
-            result = llm_analyze(llm_model, query_to_use, context=content)
+            # Retry logic with exponential backoff
+            result = None
+            for attempt in range(max_retries):
+                result = llm_analyze(llm_model, query_to_use, context=content)
+                if result:
+                    break
+                if attempt < max_retries - 1:
+                    wait_time = 2 ** (attempt + 1)  # 2, 4, 8 seconds
+                    print(f"↻{attempt+1}", end=" ", flush=True)
+                    time.sleep(wait_time)
 
             if result:
                 url = extract_url_from_frontmatter(content)
                 url_line = f"URL: {url}\n" if url else ""
                 report_file.write(f"-- Stromanbieter: {provider}\n{url_line}{result}\n\n")
                 print("✓")
+                success_count += 1
                 time.sleep(2)
             else:
-                print("✗")
-                break
+                print(f"✗ (failed after {max_retries} attempts)")
+                fail_count += 1
+                failed_files.append(f)
+
+    # Summary
+    print(f"\n{'='*50}")
+    print(f"Analysis complete: {success_count}✓ {fail_count}✗")
+    if failed_files:
+        print(f"Failed files: {', '.join(failed_files)}")
+    print(f"{'='*50}")
 
     return report_path
 
