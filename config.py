@@ -78,7 +78,7 @@ Regeln:
 
 Bei dem Stromanbieter OEMAG heisst der Einspeisetarif Marktpreis, nenne hier den letztgenannten Preis inkl. Monatsangabe. Beim Anbieter WienEnergie ist ein Verbrauchspreis in cent/kWh angegeben. Antworte nur mit der Liste der Tarife in dem Schema. Keine weiteren Informationen oder Erklärungen. Keine Webseiten-Elemente wie Navigation, Footer, Werbung, Gutscheine, Rabatte etc. Context Start: """, }],
 
-    'TARIF_TABELLE': [{"QUERY": """Extrahiere alle Stromtarife aus dem bereitgestellten Context und bringe sie in eine einheitliche Markdown-Tabelle. Verwende exakt dieses Format und diese Spaltenüberschrift:
+'TARIF_TABELLE': [{"QUERY": """Extrahiere alle Stromtarife aus dem bereitgestellten Context und bringe sie in eine einheitliche Markdown-Tabelle. Verwende exakt dieses Format und diese Spaltenüberschrift:
 
 | Stromanbieter | Tarifname | Tarifart | Preisanpassung | Strompreis (ct/kWh netto) | Link | Kurzbeschreibung |
 |:--------------|:----------|:---------|:---------------|:-------------------------|:----|:----------------|
@@ -96,7 +96,9 @@ Keine Schätzungen oder erfundene Werte: gib nur Werte/Formeln aus, die im Conte
 
 Context Start:
 
-""", }],
+"""
+
+, }],
     'SOLIDIFY_REPORT':
     [{"QUERY":
       """
