@@ -45,7 +45,8 @@ LLM_CONFIG = {
     'tu@mistral': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "tu@mistral-small-3.2-24b", }],
     'tu@qwen': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "tu@qwen-coder-30b", }],
     'tu@glm': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "tu@glm-4.7-355b", }],
-    'groq@kimi': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "groq@moonshotai/kimi-k2-instruct", }],
+    'ngc@kimi-k2-0905': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "ngc@moonshotai/kimi-k2-instruct-0905", }],
+    'openrouter@nemotron-super-free': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "openrouter@nvidia/nemotron-3-super-120b-a12b:free", }],
     'mistral@medium': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "mistral@mistral-medium-latest", }],
 }
 

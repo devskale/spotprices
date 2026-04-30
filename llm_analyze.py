@@ -130,7 +130,7 @@ def llmanalyze_files(llm_model='tu@mistral', files='crawl_', query_to_use='TARIF
     return report_path
 
 
-def solidify_report(report_path, query_to_use='TARIF_TABELLE', llm_model='groq@kimi', ending='tab.md', maxtokens=30000):
+def solidify_report(report_path, query_to_use='TARIF_TABELLE', llm_model='mistral@medium', ending='tab.md', maxtokens=30000):
     """Reads report file and generates consolidated table."""
     try:
         content = Path(report_path).read_text(encoding='utf-8')
@@ -169,7 +169,7 @@ if __name__ == '__main__':
     parser.add_argument('--files', default='crawl_', help="File pattern (default: crawl_)")
     parser.add_argument('--max-files', type=int, default=None)
     parser.add_argument('--report-file', default=None)
-    parser.add_argument('--report-model', default='groq@kimi')
+    parser.add_argument('--report-model', default='mistral@medium')
     args = parser.parse_args()
 
     from pathlib import Path
