@@ -8,6 +8,10 @@ router = APIRouter(prefix="/spotprices", tags=["spotprices"])
 # Update with your actual chart directory
 CHART_DIR = Path(__file__).resolve().parents[4] / "data" / "charts"
 
+# In-memory cache for the latest chart SVG bytes, keyed by range and
+# invalidated on file mtime change. Polled heavily; file changes ~daily.
+_CHART_CACHE: dict[str, dict] = {}
+
 
 def find_latest_chart(chart_range: str = "singleday") -> Path:
     """
@@ -16,7 +20,6 @@ def find_latest_chart(chart_range: str = "singleday") -> Path:
     - 'range': filenames matching price_chart_YYYY-MM-DD_YYYY-MM-DD.svg
     """
     chart_dir = CHART_DIR
-    print(chart_dir)
     if chart_range == "singleday":
         pattern = re.compile(r"^price_chart_\d{4}-\d{2}-\d{2}\.svg$")
     else:  # chart_range == "range"
@@ -43,6 +46,14 @@ async def get_latest_daychart(chart_range: str = Query("singleday", alias="range
         chart_range = "singleday"
 
     latest_chart_path = find_latest_chart(chart_range=chart_range)
-    with open(latest_chart_path, "rb") as f:
-        svg_content = f.read()
+    # Cache the SVG bytes keyed on (path, mtime) — this endpoint is polled
+    # heavily and the file only changes once daily.
+    cache_key = (str(latest_chart_path), latest_chart_path.stat().st_mtime)
+    cached = _CHART_CACHE.get(chart_range)
+    if cached and cached["key"] == cache_key:
+        svg_content = cached["content"]
+    else:
+        with open(latest_chart_path, "rb") as f:
+            svg_content = f.read()
+        _CHART_CACHE[chart_range] = {"key": cache_key, "content": svg_content}
     return Response(content=svg_content, media_type="image/svg+xml")

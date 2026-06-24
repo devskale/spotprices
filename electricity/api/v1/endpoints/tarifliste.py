@@ -107,6 +107,32 @@ def get_latest_report() -> tuple[Path, datetime]:
     return latest_report, modified_time
 
 
+# --- mtime-based cache for parsed tariffs ---------------------------------
+# The report file is regenerated ~once daily, but this endpoint is polled
+# heavily (thousands of hits). Cache the glob + read + parse and only
+# recompute when the underlying file's mtime changes.
+_TARIFF_CACHE: dict[str, object] = {}
+
+
+def get_cached_tariffs() -> tuple[list, Path, datetime]:
+    """Return (tariffs, report_path, modified_time), recomputing only when
+    the latest report file changes (by path + mtime)."""
+    report_file, modified_time = get_latest_report()
+    cache_key = f"{report_file}:{report_file.stat().st_mtime}"
+    cached = _TARIFF_CACHE.get("key")
+    if cached and cached["key"] == cache_key:
+        return cached["tariffs"], report_file, modified_time
+
+    with open(report_file, "r", encoding="utf-8") as f:
+        content = f.read()
+    tariffs = parse_markdown_table(content)
+    _TARIFF_CACHE["key"] = {
+        "key": cache_key,
+        "tariffs": tariffs,
+    }
+    return tariffs, report_file, modified_time
+
+
 @router.get("")
 async def get_tarifliste(
     rows: int = Query(default=10, ge=1, le=100),
@@ -124,8 +150,8 @@ async def get_tarifliste(
         Dictionary with tariffs list and metadata
     """
     try:
-        # Get latest report file
-        report_file, modified_time = get_latest_report()
+        # Get latest report file (cached by mtime; polled heavily)
+        tarife, report_file, modified_time = get_cached_tariffs()
 
         # Extract date from filename (format: report_YYYYMMDD_tab.md)
         date_match = re.search(r'report_(\d{4})(\d{2})(\d{2})_tab\.md$', report_file.name)
@@ -133,13 +159,6 @@ async def get_tarifliste(
         if date_match:
             year, month, day = date_match.groups()
             report_date = f"{year}-{month}-{day}"
-        
-        # Read and parse report content
-        with open(report_file, 'r', encoding='utf-8') as f:
-            content = f.read()
-
-        # Parse markdown table into tariff objects
-        tarife = parse_markdown_table(content)
 
         # Return requested number of tariffs with metadata
         return {
