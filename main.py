@@ -7,7 +7,7 @@ app = FastAPI(
     version="1.0.0",
 )
 
-app.include_router(api_v1_router, prefix="/api/v1")
+app.include_router(api_v1_router, prefix="/electricity")
 
 
 @app.get("/")

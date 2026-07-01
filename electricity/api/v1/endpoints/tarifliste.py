@@ -81,9 +81,9 @@ def get_latest_report() -> tuple[Path, datetime]:
     """Get the path and timestamp of the latest report file."""
     report_pattern = re.compile(r'report_\d{8}_tab\.md$')
 
-    # Get the spotprices directory path
-    # Go up 4 levels to reach spotprices
-    current_dir = Path(__file__).resolve().parents[4]
+    # Get the spotprices directory path from CONFIG (not magic path depth)
+    from config import CONFIG
+    current_dir = CONFIG['db_path'].parent
     report_dir = current_dir / "data" / "crawls"
 
     if not report_dir.exists():

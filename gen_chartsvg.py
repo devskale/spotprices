@@ -1,16 +1,15 @@
 from datetime import datetime, timedelta
 from pathlib import Path
-from sqlalchemy import create_engine, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 from db.models.spot_prices import SpotPrice
-from config import CONFIG
 import math
 from db.maintenance import update_db
+from db.utils import get_engine
 
 
 def gen_chart_svg(startday, endday, output_file='price_chart.svg', minmaxdot=False):
-    db_file = CONFIG['db_path'] / CONFIG['db_file']
-    engine = create_engine(f'sqlite:///{db_file}')
+    engine = get_engine()
 
     start_time = datetime.combine(startday, datetime.min.time())
     end_time = datetime.combine(endday, datetime.max.time())

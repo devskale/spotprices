@@ -56,6 +56,21 @@ documents) — this may unlock more than just Spotty.
   it.
 - **SVG generation via string concatenation** in `gen_chartsvg.py`: use
   `xml.etree.ElementTree` or `xml.sax.saxutils.escape` for safety.
+- **Chart readability when scaled down**: the spot-price SVG is generated at
+  a fixed 800x400 viewBox. When embedded in a WordPress page and scaled down
+  (e.g. on mobile or in a narrow column), the axis labels, price values, and
+  day labels become hard to read. Options to investigate:
+  1. **Responsive font sizing** — use SVG `viewBox` + percentage-based units
+     so text scales with the container (current text uses fixed px sizes).
+  2. **Server-side PNG fallback** — render a higher-DPI raster (PNG) via
+     `cairosvg` for retina displays, keep SVG for full-resolution.
+  3. **Interactive chart** — replace the static SVG with a lightweight JS
+     library (e.g. uPlot, Chart.js) that redraws at the container width and
+     supports hover tooltips. More work but best UX.
+  4. **Simpler chart** — fewer labels, thicker line, larger min/max dots
+     so the chart remains legible at small sizes.
+  Start with (1) and (4); (3) is a larger follow-up if the static SVG still
+  underperforms.
 - **Unused deps**: `python-dotenv` (secrets come from `passwords.json`),
   `pandas` (only used by `print_chart.py` and `spot_price_analyzer.py`).
   Either use or remove.
