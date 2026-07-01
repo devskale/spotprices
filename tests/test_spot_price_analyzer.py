@@ -5,15 +5,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from db.models.spot_prices import SpotPrice
 from utils.spot_price_analyzer import SpotPriceAnalyzer
-import sys
-from pathlib import Path
 import pandas as pd
 from datetime import datetime, timedelta
 import pytest
-
-# Add project root to path
-project_root = Path(__file__).parents[1]
-sys.path.append(str(project_root))
 
 
 @pytest.fixture

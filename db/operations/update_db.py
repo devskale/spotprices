@@ -1,9 +1,8 @@
 from datetime import datetime, timedelta
-from typing import List, Tuple, Optional
+from typing import List, Tuple
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from ..models.spot_prices import SpotPrice
-from api.awattar.client import Client
 
 def find_missing_dates(session: Session) -> List[datetime.date]:
     """
@@ -88,79 +87,21 @@ def find_gaps(session: Session, start_date: datetime, end_date: datetime) -> Lis
     
     return gaps
 
-def update_db(session: Session, days_back: Optional[int] = 30) -> int:
-    """
-    Update database with missing price data.
-    
-    Args:
-        session: SQLAlchemy session
-        days_back: Number of days to look back for gaps (default: 30)
-
-    Returns:
-        Number of prices added
-    """
-    client = Client()
-    total_prices = 0
-    
-    # First check for completely missing dates
-    missing_dates = find_missing_dates(session)
-    for date in missing_dates:
-        prices = client.fetch_day_prices(date)
-        if prices:
-            for price in prices:
-                spot_price = SpotPrice(
-                    start_timestamp=int(price.timestamp.timestamp()),
-                    end_timestamp=int(price.timestamp.timestamp()) + 3600,
-                    price=price.price,
-                    unit='ct/kWh',
-                    source='awattar'
-                )
-                session.merge(spot_price)
-                total_prices += 1
-            print(f"Added data for {date}: {len(prices)} prices")
-            session.commit()
-    
-    # Then check for gaps in recent data
-    end_date = datetime.now()
-    start_date = end_date - timedelta(days=days_back)
-    
-    gaps = find_gaps(session, start_date, end_date)
-    for gap_start, gap_end in gaps:
-        prices = client.fetch_day_prices(gap_start.date())
-        if prices:
-            for price in prices:
-                if gap_start <= price.timestamp <= gap_end:
-                    spot_price = SpotPrice(
-                        start_timestamp=int(price.timestamp.timestamp()),
-                        end_timestamp=int(price.timestamp.timestamp()) + 3600,
-                        price=price.price,
-                        unit='ct/kWh',
-                        source='awattar'
-                    )
-                    session.merge(spot_price)
-                    total_prices += 1
-            session.commit()
-    
-    return total_prices
 
 if __name__ == "__main__":
     # For direct script execution
     from sqlalchemy import create_engine
     from config import CONFIG
-    
+
     db_file = CONFIG['db_path'] / CONFIG['db_file']
     engine = create_engine(f'sqlite:///{db_file}')
-    
-    try:
-        db_file = CONFIG['db_path'] / CONFIG['db_file']
-        engine = create_engine(f'sqlite:///{db_file}')
 
+    try:
         with Session(engine) as session:
             missing_dates = find_missing_dates(session)
             if not missing_dates:
                 print("No missing data found")
             else:
-                total = update_db(session)
-                print(f"Total prices added: {total}")
+                print(f"Missing dates: {missing_dates}")
     except Exception as e:
         print(f"An error occurred: {e}")

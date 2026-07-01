@@ -1,10 +1,21 @@
-import requests
-from config import LLM_CONFIG, QUERY_CONFIG, PASSWORDS
 import os
 import time
 import argparse
 import re
 from pathlib import Path
+
+from config import LLM_CONFIG, QUERY_CONFIG
+
+# uniinfer + credgoo provide direct LLM access without going through the
+# amd1 proxy. Providers are resolved from the 'provider@model' strings in
+# LLM_CONFIG; API keys are fetched via credgoo (falling back to env vars).
+from uniinfer import ProviderFactory, ChatMessage, ChatCompletionRequest
+from uniinfer.errors import UniInferError
+from credgoo import get_api_key
+
+
+# Cache provider instances so we don't re-fetch the API key on every call.
+_PROVIDER_CACHE: dict[str, object] = {}
 
 
 def extract_url_from_frontmatter(content):
@@ -18,55 +29,77 @@ def extract_url_from_frontmatter(content):
     return None
 
 
+def _get_provider(provider_name: str):
+    """Return a cached uniinfer provider instance, fetching its API key via
+    credgoo (or env var). Returns None if the key can't be resolved."""
+    if provider_name in _PROVIDER_CACHE:
+        return _PROVIDER_CACHE[provider_name]
+
+    # credgoo service name matches the provider name for most providers; the
+    # TU provider fetches its own key internally, so no key needed.
+    api_key = None
+    if provider_name != 'tu':
+        api_key = os.environ.get(provider_name.upper() + '_API_KEY') or get_api_key(provider_name)
+        if not api_key:
+            print(f"FAIL No API key for provider: {provider_name}")
+            return None
+
+    try:
+        provider = ProviderFactory.get_provider(provider_name, api_key=api_key)
+    except ValueError as e:
+        print(f"FAIL Unknown provider '{provider_name}': {str(e)[:50]}")
+        return None
+
+    _PROVIDER_CACHE[provider_name] = provider
+    return provider
+
+
 def llm_analyze(llm_model_name, query_name, context=None):
-    """Sends a query to a specified LLM model and returns the response."""
+    """Sends a query to a specified LLM model and returns the response.
+
+    llm_model_name is a key in LLM_CONFIG whose MODEL value uses the
+    'provider@model' format (e.g. 'mistral@mistral-small-latest')."""
     llm_config = LLM_CONFIG.get(llm_model_name)
     if not llm_config:
-        print(f"✗ No config for: {llm_model_name}")
+        print(f"FAIL No config for: {llm_model_name}")
         return None
 
     query_config = QUERY_CONFIG.get(query_name)
     if not query_config:
-        print(f"✗ No query: {query_name}")
+        print(f"FAIL No query: {query_name}")
         return None
 
     query = query_config[0].get("QUERY")
     if context:
         query = f"{query}\n\n{context}"
 
-    base_url = llm_config[0].get("BASEURL")
-    api_key = PASSWORDS.get(llm_config[0].get("APIKEY"))
-    model = llm_config[0].get("MODEL")
+    # MODEL is 'provider@model_id' — uniinfer resolves the provider and credgoo
+    # resolves the key.
+    model_str = llm_config[0].get("MODEL")
+    if '@' not in model_str:
+        print(f"FAIL Model '{model_str}' must be 'provider@model_id'")
+        return None
+    provider_name, model_id = model_str.split('@', 1)
 
-    if not api_key:
-        print(f"✗ No API key for: {llm_model_name}")
+    provider = _get_provider(provider_name)
+    if provider is None:
         return None
 
-    headers = {"Content-Type": "application/json"}
-
-    if 'openrouter' in llm_model_name or 'groq' in llm_model_name:
-        headers['Authorization'] = f'Bearer {api_key}'
-        data = {"model": model, "messages": [{"role": "user", "content": query}], "max_tokens": 4000, "temperature": 0.1}
-    elif 'amp1' in llm_model_name:
-        data = {"prompt": query, "model": model, "max_tokens": 4000}
-    else:
-        headers['Authorization'] = f'Bearer {api_key}'
-        data = {"model": model, "messages": [{"role": "user", "content": query}], "max_tokens": 4000, "temperature": 0.1}
+    request = ChatCompletionRequest(
+        messages=[ChatMessage(role="user", content=query)],
+        model=model_id,
+        max_tokens=4000,
+        temperature=0.1,
+    )
 
     try:
-        endpoint = "/v1/completions" if 'amp1' in llm_model_name else "/chat/completions"
-        response = requests.post(f"{base_url}{endpoint}", headers=headers, json=data, timeout=300)
-        response.raise_for_status()
-
-        if 'amp1' in llm_model_name:
-            return response.json()['choices'][0]['text']
-        return response.json()['choices'][0]['message']['content']
-
-    except requests.exceptions.Timeout:
-        print(f"✗ Timeout: {llm_model_name}")
+        response = provider.complete(request)
+        return response.message.content
+    except UniInferError as e:
+        print(f"FAIL {llm_model_name}: {str(e)[:80]}")
         return None
     except Exception as e:
-        print(f"✗ Error: {str(e)[:50]}")
+        print(f"FAIL {llm_model_name}: {str(e)[:80]}")
         return None
 
 
@@ -105,24 +138,24 @@ def llmanalyze_files(llm_model='tu@mistral', files='crawl_', query_to_use='TARIF
                     break
                 if attempt < max_retries - 1:
                     wait_time = 2 ** (attempt + 1)  # 2, 4, 8 seconds
-                    print(f"↻{attempt+1}", end=" ", flush=True)
+                    print(f"r{attempt+1}", end=" ", flush=True)
                     time.sleep(wait_time)
 
             if result:
                 url = extract_url_from_frontmatter(content)
                 url_line = f"URL: {url}\n" if url else ""
                 report_file.write(f"-- Stromanbieter: {provider}\n{url_line}{result}\n\n")
-                print("✓")
+                print("OK")
                 success_count += 1
                 time.sleep(2)
             else:
-                print(f"✗ (failed after {max_retries} attempts)")
+                print(f"FAIL (failed after {max_retries} attempts)")
                 fail_count += 1
                 failed_files.append(f)
 
     # Summary
     print(f"\n{'='*50}")
-    print(f"Analysis complete: {success_count}✓ {fail_count}✗")
+    print(f"Analysis complete: {success_count} OK, {fail_count} FAIL")
     if failed_files:
         print(f"Failed files: {', '.join(failed_files)}")
     print(f"{'='*50}")
@@ -144,13 +177,13 @@ def solidify_report(report_path, query_to_use='TARIF_TABELLE', llm_model='mistra
         if result:
             out_path = f'{os.path.splitext(report_path)[0]}_{ending}'
             Path(out_path).write_text(result, encoding='utf-8')
-            print(f"✓\n→ {out_path}")
+            print(f"OK\n-> {out_path}")
             return out_path
         else:
-            print("✗")
+            print("FAIL")
             return None
     except FileNotFoundError:
-        print(f"✗ Not found: {report_path}")
+        print(f"FAIL Not found: {report_path}")
         return None
 
 
@@ -179,7 +212,7 @@ if __name__ == '__main__':
     if args.step in ['files', 'both']:
         del_files(contains='report_', doesnotcontain='tab.md')
         report_path = llmanalyze_files(
-            llm_model='tu@mistral',
+            llm_model='mistral@small',
             files=args.files,
             query_to_use='TARIFLISTE_ABFRAGE',
             maxtokens=20000,

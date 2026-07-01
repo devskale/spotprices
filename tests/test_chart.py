@@ -3,11 +3,7 @@ from config import CONFIG
 from db.models.spot_prices import SpotPrice
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, select
-from pathlib import Path
-import sys
 from datetime import datetime, timedelta
-project_root = Path(__file__).parents[1]
-sys.path.append(str(project_root))
 
 
 # This script defines functions to visualize spot price data as an ASCII chart.

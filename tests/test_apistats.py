@@ -1,9 +1,4 @@
 # tests/test_stats.py
-import sys
-from pathlib import Path
-project_root = Path(__file__).parents[1]
-sys.path.append(str(project_root))
-
 from api.awattar.client import Client as AwattarClient
 from api.smartenergy.client import Client as SmartEnergyClient
 

@@ -4,8 +4,9 @@ from datetime import datetime
 
 class WordPressPosts:
     def __init__(self):
-        self.base_url = "https://gwen.at/wp-json/wp/v2"
-        self.auth = ('gwen', '***REDACTED-WP-APP-PASSWORD***')
+        from config import get_secret
+        self.base_url = get_secret("wp_api_url", "https://gwen.at/wp-json/wp/v2")
+        self.auth = ('gwen', get_secret("wp_app_password", ""))
 
     def list_posts(self):
         """List all posts with their IDs and titles"""

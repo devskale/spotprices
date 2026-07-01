@@ -6,11 +6,7 @@ from db.operations.spot_prices import save_prices, get_day_prices
 from db.models.spot_prices import Base
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine
-import sys
-from pathlib import Path
 from datetime import datetime
-project_root = Path(__file__).parents[1]
-sys.path.append(str(project_root))
 
 # tests/test_database.py
 # This script tests the database interaction functionalities of the spot price data application.

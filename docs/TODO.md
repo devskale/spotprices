@@ -1,0 +1,77 @@
+# TODO / Known Issues
+
+Project-level backlog and notes. Items here are not blocking but should be
+addressed. Move items out as they are implemented.
+
+## Crawler
+
+### PDF crawling (Spotty, possibly others)
+
+Spotty's tariffs are published as a PDF (`https://www.spottyenergie.at/agb`,
+currently `crawl=n` in the Google Sheet). The current crawler
+(`get_tarife.py`) only handles HTML pages via the configured crawlers
+(`w3m`/`jina`/`chawan`/`markdowner`/`direct`). A PDF extraction path would be
+useful.
+
+The `web_apis` server on amd already exposes `/pdf/to_md` (PDF→Markdown via
+Bearer auth, see `livesystem.md`). Options:
+
+1. **Reuse `/pdf/to_md`** — add a `pdf` crawler mode in `config.py` that POSTs
+   the PDF URL to `https://amd1.mooo.com/api/pdf/to_md` and stores the returned
+   Markdown. Lowest effort, reuses existing infra.
+2. **Native extraction** — add a `pypdf`/`pdfplumber`-based extractor as a new
+   crawler mode. No external dependency, but another thing to maintain.
+
+Approach (1) is preferred. Add a `pdf` entry to `CRAWL_CONFIG` and a branch in
+`crawl_data()` analogous to the `direct` mode, then set `tool=pdf` and
+`crawl=y` for the Spotty row in the Google Sheet.
+
+Also check whether other providers publish tariffs as PDF (e.g. AGB
+documents) — this may unlock more than just Spotty.
+
+## Testing
+
+- Add automated crawler tests against `tests/webdummy/` (server + fixtures
+  exist; tests not yet written).
+- Add pure-function tests for `parse_markdown_table()` and
+  `normalize_strompreis_to_netto_exkl_mwst()` in
+  `electricity/api/v1/endpoints/tarifliste.py`.
+- Add FastAPI endpoint tests with `TestClient` for `/tarifliste` and
+  `/spotprices/chart/latest`.
+- Add mocked-API tests for Awattar/SmartEnergy unit conversion
+  (`marketprice/10`, `/1.2` MWSt) using `responses`.
+
+## Code quality
+
+- **API path mismatch**: `main.py` mounts router at `/api/v1`, but the
+  WordPress plugin and `livesystem.md` expect `/electricity/...`. Align the
+  prefix.
+- **Magic path depth**: `tarifliste.py` and `spotprices.py` use
+  `Path(__file__).resolve().parents[4]` to find `data/`. Derive from
+  `CONFIG['db_path']` or `main.py`'s location instead.
+- **SQLite WAL mode**: enable `PRAGMA journal_mode=WAL` for non-blocking
+  reads during cron writes.
+- **SmartEnergy client signature drift**: `fetch_day_prices()` takes no `day`
+  arg, unlike Awattar's `fetch_day_prices(day)`. Align the interface or drop
+  it.
+- **SVG generation via string concatenation** in `gen_chartsvg.py`: use
+  `xml.etree.ElementTree` or `xml.sax.saxutils.escape` for safety.
+- **Unused deps**: `python-dotenv` (secrets come from `passwords.json`),
+  `pandas` (only used by `print_chart.py` and `spot_price_analyzer.py`).
+  Either use or remove.
+
+## Hygiene
+
+- Move root-level debug scripts (`debug_file_processing.py`, `debug_llm.py`,
+  `deploy_api_fix.sh`, `strom-tarif-pugin-test.html`) to `scripts/` or delete.
+- `print_chart.py` uses `matplotlib` which is not in `pyproject.toml` deps —
+  add it or remove the file.
+- `description/` folder — review and archive or delete.
+
+## Security
+
+- **WordPress password in git history**: `wp_postings.py` hardcoded a
+  WordPress application password (commit `f68a708`). The code now reads from
+  `passwords.json`, but **the old password must be rotated** in WP admin and
+  the history scrubbed with `git filter-repo`.
+- Add a GitHub Action running `uv run --group dev ruff check .` + `pytest`.
