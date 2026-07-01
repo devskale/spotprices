@@ -106,6 +106,16 @@ def crawl_data(data, default_crawler='w3m', n=0, anbieter=None, crawl_dir=None):
                     response = requests.get(url, timeout=60)
                     response.raise_for_status()
                     text = response.text
+                elif crawler == 'pdf':
+                    # Native PDF extraction via pypdf. Downloads the PDF and
+                    # extracts text page by page.
+                    import io
+                    from pypdf import PdfReader
+                    pdf_response = requests.get(url, timeout=120)
+                    pdf_response.raise_for_status()
+                    reader = PdfReader(io.BytesIO(pdf_response.content))
+                    pages = [page.extract_text() or "" for page in reader.pages]
+                    text = "\n\n".join(pages)
                 else:
                     if crawler == 'jina':
                         crawl_url = f"{crawler_prefix}{url}"

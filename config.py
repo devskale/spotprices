@@ -23,6 +23,9 @@ CRAWL_CONFIG = {
     # Direct fetch: no external service, just requests.get(url). Used for
     # testing against the webdummy site (tests/webdummy/server.py).
     'direct': [{"PREFIX": "", "Bearer": "", "Format": "txt"}],
+    # PDF: native extraction via pypdf. Used for providers that publish
+    # tariffs as PDF (e.g. Spotty). No external service needed.
+    'pdf': [{"Format": "md"}],
 }
 
 # Load API keys from passwords.json (resolved next to this file, not cwd)

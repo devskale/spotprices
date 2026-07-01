@@ -29,6 +29,14 @@ Approach (1) is preferred. Add a `pdf` entry to `CRAWL_CONFIG` and a branch in
 Also check whether other providers publish tariffs as PDF (e.g. AGB
 documents) — this may unlock more than just Spotty.
 
+**DONE** — went with approach (2) (native `pypdf`) to avoid the amd1 auth
+dependency. Added a `pdf` crawler mode that downloads the PDF and extracts text
+page-by-page. To use: set `tool=pdf` and `crawl=y` for the Spotty row in the
+Google Sheet.
+
+Check whether other providers publish tariffs as PDF (e.g. AGB documents) —
+this may unlock more than just Spotty. **(still open)**
+
 ## Testing
 
 - Add automated crawler tests against `tests/webdummy/` (server + fixtures
