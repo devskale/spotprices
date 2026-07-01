@@ -19,12 +19,18 @@ CRAWL_CONFIG = {
     'lynx': [{"PREFIX": "https://amd1.mooo.com/api/fetch_url?tool=lynx&url=", "Bearer": "", "BearerKey": "amd1_fetch_bearer", "Format": "json"}],
     'markdowner': [{"PREFIX": "https://md.dhr.wtf/?url=", "Bearer": "", "BearerKey": "markdowner_bearer", "Format": "md"}],
     'jina': [{"PREFIX": "https://r.jina.ai/", "Bearer": "", "BearerKey": "jina_bearer", "Format": "md"}],
-    'chawan': [{"CMD": "/Users/johannwaldherr/.pi/agent/skills/fetch-url/fetch-url", "ARGS": "--tool chawan", "Format": "txt"}],
+    'chawan': [{"CMD": os.environ.get("CHAWAN_CMD", "/Users/johannwaldherr/.pi/agent/skills/fetch-url/fetch-url"), "ARGS": "--tool chawan", "Format": "txt"}],
+    # Direct fetch: no external service, just requests.get(url). Used for
+    # testing against the webdummy site (tests/webdummy/server.py).
+    'direct': [{"PREFIX": "", "Bearer": "", "Format": "txt"}],
+    # PDF: native extraction via pypdf. Used for providers that publish
+    # tariffs as PDF (e.g. Spotty). No external service needed.
+    'pdf': [{"Format": "md"}],
 }
 
-# Load API keys from passwords.json
+# Load API keys from passwords.json (resolved next to this file, not cwd)
 try:
-    with open('./passwords.json', 'r') as f:
+    with open(Path(__file__).parent / 'passwords.json', 'r') as f:
         PASSWORDS = json.load(f)
 except FileNotFoundError:
     PASSWORDS = {}
@@ -41,13 +47,20 @@ def get_secret(name: str, default: str = "") -> str:
     return str(PASSWORDS.get(name, default) or default)
 
 
+# LLM_CONFIG maps a friendly name to a uniinfer 'provider@model' string.
+# uniinfer resolves the provider, credgoo resolves the API key. The old
+# BASEURL/APIKEY fields are no longer used (kept only for reference).
 LLM_CONFIG = {
-    'tu@mistral': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "tu@mistral-small-3.2-24b", }],
-    'tu@qwen': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "tu@qwen-coder-30b", }],
-    'tu@glm': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "tu@glm-4.7-355b", }],
-    'ngc@kimi-k2-0905': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "ngc@moonshotai/kimi-k2-instruct-0905", }],
-    'openrouter@nemotron-super-free': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "openrouter@nvidia/nemotron-3-super-120b-a12b:free", }],
-    'mistral@medium': [{"BASEURL": "https://amd1.mooo.com:8123/v1", "APIKEY": "unii_api_key", "MODEL": "mistral@mistral-medium-latest", }],
+    # TU Aqueduct (free, fetches its own key via credgoo 'tu' service)
+    'tu@qwen': [{"MODEL": "tu@qwen-3.5-397b"}],
+    'tu@gemma': [{"MODEL": "tu@gemma-4-e2b-it"}],
+    # Mistral (direct, key via credgoo 'mistral')
+    'mistral@small': [{"MODEL": "mistral@mistral-small-latest"}],
+    'mistral@medium': [{"MODEL": "mistral@mistral-medium-latest"}],
+    # OpenRouter (key via credgoo 'openrouter')
+    'openrouter@nemotron-super-free': [{"MODEL": "openrouter@nvidia/nemotron-3-super-120b-a12b:free"}],
+    # Groq (key via credgoo 'groq')
+    'groq@llama': [{"MODEL": "groq@llama-3.3-70b-versatile"}],
 }
 
 

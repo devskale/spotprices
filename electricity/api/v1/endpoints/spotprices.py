@@ -3,10 +3,11 @@ import re
 from fastapi import HTTPException, Query, Response
 from fastapi import APIRouter
 
+from config import CONFIG
+
 router = APIRouter(prefix="/spotprices", tags=["spotprices"])
 
-# Update with your actual chart directory
-CHART_DIR = Path(__file__).resolve().parents[4] / "data" / "charts"
+CHART_DIR = CONFIG['db_path'] / "charts"
 
 # In-memory cache for the latest chart SVG bytes, keyed by range and
 # invalidated on file mtime change. Polled heavily; file changes ~daily.

@@ -1,9 +1,9 @@
 from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 from db.models.spot_prices import SpotPrice
 from api.awattar.client import Client
-from config import CONFIG
+from db.utils import get_engine
 
 # How many days back to check for missing data (including tomorrow for preview)
 CATCHUP_DAYS = 3
@@ -21,8 +21,7 @@ def update_db():
     Only fills the last CATCHUP_DAYS from today backwards.
     Does NOT attempt to fill historical gaps - live with holes in the data.
     """
-    db_file = CONFIG['db_path'] / CONFIG['db_file']
-    engine = create_engine(f'sqlite:///{db_file}')
+    engine = get_engine()
     client = Client()
 
     with Session(engine) as session:

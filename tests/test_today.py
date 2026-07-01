@@ -1,10 +1,5 @@
 # tests/check_today.py
-from pathlib import Path
-import sys
 from datetime import datetime
-
-project_root = Path(__file__).parents[1]
-sys.path.append(str(project_root))
 
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session

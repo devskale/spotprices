@@ -9,16 +9,29 @@ dependencies = [
     "requests>=2.31.0",
     "sqlalchemy>=2.0.0",
     "pydantic>=2.0.0",
-    "python-dotenv>=1.0.0",
-    "pandas>=2.0.0",
+    "uniinfer",
+    "credgoo",
+    "pypdf>=6.14.2",
 ]
 
-[project.optional-dependencies]
+[tool.uv.sources]
+uniinfer = { git = "https://github.com/devskale/python-openutils.git", subdirectory = "packages/uniinfer" }
+credgoo = { git = "https://github.com/devskale/python-openutils.git", subdirectory = "packages/credgoo" }
+
+[dependency-groups]
 dev = [
     "pytest>=7.0.0",
     "ruff>=0.1.0",
+    "httpx>=0.27.0",
+    "responses>=0.25.0",
+    "matplotlib>=3.7.0",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["E402"]
-"test_*.py" = ["E402"]
+"scripts/**/*.py" = ["E402"]
+"conftest.py" = ["E402"]

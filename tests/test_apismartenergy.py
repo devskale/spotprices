@@ -1,11 +1,4 @@
-# tests/test_apiawattar.py
-import sys
-from pathlib import Path
-
-# Add project root to Python path
-project_root = Path(__file__).parents[1]
-sys.path.append(str(project_root))
-
+# tests/test_apismartenergy.py
 from api.smartenergy.client import Client
 
 client = Client()

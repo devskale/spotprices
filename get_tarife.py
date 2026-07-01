@@ -12,10 +12,11 @@ import argparse
 import subprocess
 
 
-def fetch_and_convert_csv_to_dict():
+def fetch_and_convert_csv_to_dict(csv_url=None):
     """Fetches CSV data from the URL in config, parses it, and returns a dictionary."""
     all_data = {}
-    for entry in TARIF_CONFIG['Tarifueberblick']:
+    entries = [{'url': csv_url, 'Beschreibung': 'Tarifueberblick'}] if csv_url else TARIF_CONFIG['Tarifueberblick']
+    for entry in entries:
         url = entry.get("url")
         description = entry.get("Beschreibung", "no description")
         if url:
@@ -26,13 +27,13 @@ def fetch_and_convert_csv_to_dict():
                 reader = csv.DictReader(csv_data)
                 all_data[description] = list(reader)
             except Exception as e:
-                print(f"✗ CSV fetch error: {e}")
+                print(f"FAIL CSV fetch error: {e}")
     return all_data
 
 
-def crawl_data(data, default_crawler='w3m', n=0, anbieter=None):
+def crawl_data(data, default_crawler='w3m', n=0, anbieter=None, crawl_dir=None):
     """Fetches and saves crawl data using specified crawler."""
-    crawl_dir = Path("data/crawls")
+    crawl_dir = Path("data/crawls") if crawl_dir is None else Path(crawl_dir)
     crawl_dir.mkdir(parents=True, exist_ok=True)
 
     crawled_count = 0
@@ -54,7 +55,7 @@ def crawl_data(data, default_crawler='w3m', n=0, anbieter=None):
                 crawler = default_crawler
             crawler_config = CRAWL_CONFIG.get(crawler, [])
             if not crawler_config:
-                print(f"✗ No config for: {crawler}")
+                print(f"FAIL No config for: {crawler}")
                 continue
 
             crawler_prefix = crawler_config[0].get('PREFIX', '')
@@ -75,7 +76,7 @@ def crawl_data(data, default_crawler='w3m', n=0, anbieter=None):
             filepath = crawl_dir / f"crawl_{provider}_{tarif_type}_{timestamp}_{url_hash}.txt"
 
             if filepath.exists():
-                print(f"⏭ {provider}/{tarif_type}")
+                print(f"SKIP {provider}/{tarif_type}")
                 continue
 
             try:
@@ -96,9 +97,25 @@ def crawl_data(data, default_crawler='w3m', n=0, anbieter=None):
                     cmd.append(url)
                     result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
                     if result.returncode != 0:
-                        print(f"✗ {crawler} failed")
+                        print(f"FAIL {crawler} failed")
                         continue
                     text = result.stdout
+                elif crawler == 'direct':
+                    # Fetch the URL directly (no external service). Used for
+                    # testing against the webdummy site.
+                    response = requests.get(url, timeout=60)
+                    response.raise_for_status()
+                    text = response.text
+                elif crawler == 'pdf':
+                    # Native PDF extraction via pypdf. Downloads the PDF and
+                    # extracts text page by page.
+                    import io
+                    from pypdf import PdfReader
+                    pdf_response = requests.get(url, timeout=120)
+                    pdf_response.raise_for_status()
+                    reader = PdfReader(io.BytesIO(pdf_response.content))
+                    pages = [page.extract_text() or "" for page in reader.pages]
+                    text = "\n\n".join(pages)
                 else:
                     if crawler == 'jina':
                         crawl_url = f"{crawler_prefix}{url}"
@@ -122,19 +139,19 @@ def crawl_data(data, default_crawler='w3m', n=0, anbieter=None):
                 text = f"---\nurl: {url}\ncrawl_date: {crawl_date}\nprovider: {provider}\ntype: {tarif_type}\n---\n\n{text}"
 
                 filepath.write_text(text, encoding='utf-8')
-                print(f"✓ {provider}/{tarif_type} [{crawler}]")
+                print(f"OK {provider}/{tarif_type} [{crawler}]")
                 crawled_count += 1
                 last_crawl_time = datetime.now()
 
             except Exception as e:
-                print(f"✗ {url[:40]}: {str(e)[:50]}")
+                print(f"FAIL {url[:40]}: {str(e)[:50]}")
 
     print(f"\nCrawled: {crawled_count}")
 
 
-def cleanup(n=1):
+def cleanup(n=1, crawl_dir=None):
     """Keeps the n last versions of each crawl file per URL."""
-    crawl_dir = Path("data/crawls")
+    crawl_dir = Path("data/crawls") if crawl_dir is None else Path(crawl_dir)
     if not crawl_dir.exists():
         return
 
@@ -160,8 +177,13 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Crawl tariff data")
     parser.add_argument('--anbieter', type=str, help="Filter by provider")
     parser.add_argument('--crawler', type=str, default='w3m', help="Crawler tool (default: w3m)")
+    parser.add_argument('--csv-url', type=str, default=None,
+                        help="Override the tariff-URL CSV source (e.g. webdummy /tarife.csv)")
+    parser.add_argument('--crawl-dir', type=str, default=None,
+                        help="Directory to write crawl files (default: data/crawls)")
     args = parser.parse_args()
 
-    data = fetch_and_convert_csv_to_dict()
-    crawl_data(data=data, default_crawler=args.crawler, n=0, anbieter=args.anbieter)
-    cleanup(n=1)
+    data = fetch_and_convert_csv_to_dict(csv_url=args.csv_url)
+    crawl_data(data=data, default_crawler=args.crawler, n=0, anbieter=args.anbieter,
+               crawl_dir=args.crawl_dir)
+    cleanup(n=1, crawl_dir=args.crawl_dir)

@@ -1,10 +1,6 @@
 # tests/test_gentle_fetch.py
-from pathlib import Path
 from datetime import date, timedelta
-import sys
 import time
-project_root = Path(__file__).parents[1]
-sys.path.append(str(project_root))
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session

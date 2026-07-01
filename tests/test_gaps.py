@@ -3,13 +3,8 @@ from api.awattar.client import Client
 from db.models.spot_prices import SpotPrice
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine
-from pathlib import Path
-import sys
 from datetime import datetime, timedelta
 from sqlalchemy import text
-
-project_root = Path(__file__).parents[1]
-sys.path.append(str(project_root))
 
 
 # tests/test_gaps.py

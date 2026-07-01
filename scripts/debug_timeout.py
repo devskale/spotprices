@@ -6,11 +6,12 @@ import os
 import sys
 import time
 import pytest
+from pathlib import Path
 
 if os.getenv("RUN_LLM_TESTS") != "1":
     pytest.skip("Set RUN_LLM_TESTS=1 to run live LLM tests.", allow_module_level=True)
 
-sys.path.insert(0, '/Users/johannwaldherr/code/gwen.at/spotprices')
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from config import LLM_CONFIG, QUERY_CONFIG, PASSWORDS
 import requests

@@ -1,28 +1,30 @@
 # api/smartenergy/client.py
 import requests
-from datetime import datetime
+from datetime import datetime, date
 from ..models import PriceClient, PriceData
 
 
 '''
-Smartenergy prices 
-15min interval, 
+Smartenergy prices
+15min interval,
 EPEXSPOTAT
 including 20% MWSt
 for the day
 ie 24*4=96 samples per day
 '''
-
 class Client(PriceClient):
     def __init__(self):
         super().__init__('smartenergy', 'ct/kWh')
         self.base_url = "https://apis.smartenergy.at/market/v1/price"
-    
-    def fetch_day_prices(self) -> list[PriceData]:
+
+    def fetch_day_prices(self, day: date = None) -> list[PriceData]:
+        # SmartEnergy's API returns the current day's prices and does not
+        # accept a date parameter, so we ignore `day` for fetching but still
+        # accept it to match the Awattar client's signature.
         response = requests.get(self.base_url)
         response.raise_for_status()
         raw_data = response.json()
-        
+
         return [
             PriceData(
                 timestamp=datetime.fromisoformat(entry['date']),

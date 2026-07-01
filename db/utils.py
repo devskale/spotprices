@@ -5,8 +5,22 @@ from config import CONFIG
 from db.models.spot_prices import SpotPrice
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine
+from sqlalchemy.engine import Engine
 from datetime import datetime, timedelta
 from dataclasses import dataclass, field
+
+
+def get_engine() -> Engine:
+    """Create a SQLAlchemy engine for the spotprices SQLite DB with WAL mode
+    enabled. WAL allows concurrent reads during writes (cron writes vs API
+    reads) without blocking.
+    """
+    db_file = CONFIG['db_path'] / CONFIG['db_file']
+    engine = create_engine(f'sqlite:///{db_file}')
+    # Enable WAL for non-blocking reads during writes.
+    with engine.connect() as conn:
+        conn.exec_driver_sql("PRAGMA journal_mode=WAL")
+    return engine
 
 
 @dataclass

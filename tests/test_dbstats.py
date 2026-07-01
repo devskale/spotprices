@@ -9,12 +9,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import create_engine
 from config import CONFIG
 from db.utils import db_stat_timerange, db_check, get_ts
-from pathlib import Path
 from datetime import datetime, timedelta
-import sys
-
-project_root = Path(__file__).parents[1]
-sys.path.append(str(project_root))
 
 
 def test_db_listvalues(day: datetime, source: str = 'awattar'):
