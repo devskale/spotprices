@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from db.models.spot_prices import SpotPrice
 import math
+from xml.sax.saxutils import escape
 from db.maintenance import update_db
 from db.utils import get_engine
 
@@ -85,7 +86,7 @@ def gen_chart_svg(startday, endday, output_file='price_chart.svg', minmaxdot=Fal
         Strom-Spotpreis EPEX AT
     </text>
     <text x="{width/2}" y="38" text-anchor="middle" font-size="11" fill="#6b7280" class="chart-subtitle">
-        {date_range_str}
+        {escape(date_range_str)}
     </text>
 
     <!-- Y-axis label (rotated, left side) -->
@@ -126,8 +127,8 @@ def gen_chart_svg(startday, endday, output_file='price_chart.svg', minmaxdot=Fal
             weekday = day.strftime('%A')
             date_str = day.strftime('%d.%m')
             svg_content += f'''
-    <text x="{x:.1f}" y="{padding_top + plot_height + 14}" text-anchor="start" font-size="11" font-weight="500" fill="#374151" class="day-label">{weekday_de.get(weekday, weekday[:2])}</text>
-    <text x="{x:.1f}" y="{padding_top + plot_height + 27}" text-anchor="start" font-size="10" fill="#9ca3af" class="day-date">{date_str}</text>'''
+    <text x="{x:.1f}" y="{padding_top + plot_height + 14}" text-anchor="start" font-size="11" font-weight="500" fill="#374151" class="day-label">{escape(weekday_de.get(weekday, weekday[:2]))}</text>
+    <text x="{x:.1f}" y="{padding_top + plot_height + 27}" text-anchor="start" font-size="10" fill="#9ca3af" class="day-date">{escape(date_str)}</text>'''
 
         # Add noon markers (lighter vertical lines)
         current_day = startday
@@ -227,9 +228,9 @@ def gen_chart_svg(startday, endday, output_file='price_chart.svg', minmaxdot=Fal
     <!-- Legend -->
     <g transform="translate({padding_left}, {legend_y})" class="legend">
         <circle cx="0" cy="0" r="3.5" fill="#ef4444"/>
-        <text x="7" y="3" font-size="10" fill="#6b7280">Hoch {max_val:.1f} ({max_time_str})</text>
+        <text x="7" y="3" font-size="10" fill="#6b7280">Hoch {max_val:.1f} ({escape(max_time_str)})</text>
         <circle cx="0" cy="14" r="3.5" fill="#3b82f6"/>
-        <text x="7" y="17" font-size="10" fill="#6b7280">Tief {min_val:.1f} ({min_time_str})</text>
+        <text x="7" y="17" font-size="10" fill="#6b7280">Tief {min_val:.1f} ({escape(min_time_str)})</text>
     </g>'''
         else:
             svg_content += f'''
