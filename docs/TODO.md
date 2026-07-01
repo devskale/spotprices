@@ -69,8 +69,8 @@ documents) — this may unlock more than just Spotty.
   hiding, edge-aware min/max label placement, `showcase.py` viewer.
 - **Unused deps**: `python-dotenv` (secrets come from `passwords.json`),
   `pandas` (only used by `print_chart.py` and `spot_price_analyzer.py`).
-  Either use or remove. **PARTLY DONE** — `python-dotenv` removed;
-  `pandas` still used by `spot_price_analyzer.py`.
+  Either use or remove. **DONE** — `python-dotenv` removed; `pandas` removed
+  along with the unused `utils/spot_price_analyzer.py` and its test.
 
 ## Hygiene
 
