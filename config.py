@@ -17,7 +17,7 @@ PRODUCT_CONFIG = {'Produktueberblick': [
 CRAWL_CONFIG = {
     'w3m': [{"PREFIX": "https://amd1.mooo.com/api/fetch_url?tool=w3m&url=", "Bearer": "", "BearerKey": "amd1_fetch_bearer", "Format": "json"}],
     'lynx': [{"PREFIX": "https://amd1.mooo.com/api/fetch_url?tool=lynx&url=", "Bearer": "", "BearerKey": "amd1_fetch_bearer", "Format": "json"}],
-    'markdowner': [{"PREFIX": "https://md.dhr.wtf/?url=", "Bearer": "", "Format": "md"}],
+    'markdowner': [{"PREFIX": "https://md.dhr.wtf/?url=", "Bearer": "", "BearerKey": "markdowner_bearer", "Format": "md"}],
     'jina': [{"PREFIX": "https://r.jina.ai/", "Bearer": "", "BearerKey": "jina_bearer", "Format": "md"}],
     'chawan': [{"CMD": "/Users/johannwaldherr/.pi/agent/skills/fetch-url/fetch-url", "ARGS": "--tool chawan", "Format": "txt"}],
 }
